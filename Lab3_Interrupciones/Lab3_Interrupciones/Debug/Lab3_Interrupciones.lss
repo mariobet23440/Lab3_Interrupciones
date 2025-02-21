@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Fri Feb 21 01:17:19 2025
+AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Fri Feb 21 05:37:39 2025
 
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
 C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm(9): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\M328PDEF.inc'
@@ -987,13 +987,13 @@ C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\La
                                  
                                  ; ***** END OF FILE ******************************************************
                                  
-                                 ; Lab3_Interrupciones.asm
-                                 ;
-                                 ; Created: 20/02/2025 22:52:46
-                                 ; Author : Mario Alejandro Betancourt Franco
+                                 ; Contador en ATmega328P con Display de 7 Segmentos
+                                 ; Muestra el mismo número en PORTC y PORTD
                                  ;
                                  
-                                 ; Encabezado
+                                 ;==============================
+                                 ; ENCABEZADO
+                                 ;==============================
                                  .include "M328PDEF.inc"
                                  
                                  ;***** Created: 2011-02-09 12:03 ******* Source: ATmega328P.xml **********
@@ -1038,77 +1038,148 @@ C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\La
                                  #endif  /* _M328PDEF_INC_ */
                                  
                                  ; ***** END OF FILE ******************************************************
+                                 
                                  .cseg
                                  .org    0x0000
-000000 940c 0008                 JMP     START
+000000 940c 0008                     JMP     START
                                  .org    PCI0addr
-000006 940c 001b                 JMP     ISR_PCINT0
+000006 940c 001c                     JMP     ISR_PCINT0
                                  
-                                 ; Definiciones
+                                 ;==============================
+                                 ; DEFINICIONES
+                                 ;==============================
                                  .equ BTN_INC = PB1
                                  .equ BTN_DEC = PB0
                                  
-                                 ; Variables (Estos registros NO se tocan en MAINLOOP)
+                                 ; Lookup Table para Display de 7 Segmentos (cátodo común)
+                                 .equ SEVENSD0 = 0b01110111
+                                 .equ SEVENSD1 = 0b01000001
+                                 .equ SEVENSD2 = 0b00111011
+                                 .equ SEVENSD3 = 0b01101011
+                                 .equ SEVENSD4 = 0b01001101
+                                 .equ SEVENSD5 = 0b01101110
+                                 .equ SEVENSD6 = 0b01111110
+                                 .equ SEVENSD7 = 0b01000011
+                                 .equ SEVENSD8 = 0b01111111
+                                 .equ SEVENSD9 = 0b01001111
+                                 .equ SEVENSDA = 0b01011111
+                                 .equ SEVENSDB = 0b01111100
+                                 .equ SEVENSDC = 0b00110110
+                                 .equ SEVENSDD = 0b01111001
+                                 .equ SEVENSDE = 0b00111110
+                                 .equ SEVENSDF = 0b00011110 
+                                 
+                                 ; Variables
                                  .def COUNTER = R17
+                                 .def TEMP = R18
                                  
+                                 ;==============================
+                                 ; INICIALIZACIÓN
+                                 ;==============================
                                  START:
-                                 
-                                 ; Configurar la pila
-000008 ef0f                      LDI     R16, LOW(RAMEND)
-000009 bf0d                      OUT     SPL, R16
-00000a e008                      LDI     R16, HIGH(RAMEND)
-00000b bf0e                      OUT     SPH, R16
+                                     ; Configurar la pila
+000008 ef0f                          LDI     R16, LOW(RAMEND)
+000009 bf0d                          OUT     SPL, R16
+00000a e008                          LDI     R16, HIGH(RAMEND)
+00000b bf0e                          OUT     SPH, R16
                                  
                                  SETUP:
-                                     ; Activación de pines de entrada en el puerto B
-00000c ef0f                          LDI     R16, 0xFF            ; Habilitar pull-ups internos
+                                     ; Configurar botones (entrada con pull-ups)
+00000c ef0f                          LDI     R16, 0xFF
 00000d b905                          OUT     PORTB, R16
                                  
-                                     ; Activación de pines de salida en el puerto C
+                                     ; Configurar displays como salida
 00000e ef0f                          LDI     R16, 0xFF
 00000f b907                          OUT     DDRC, R16
-000010 e000                          LDI     R16, 0x00
-000011 b908                          OUT     PORTC, R16
-                                     
+000010 b90a                          OUT     DDRD, R16
+                                 
+                                     ; Inicializar contador en 0
+000011 e010                          LDI     COUNTER, 0x00
+000012 940e 002f                     CALL    UPDATE_DISPLAY
+                                 
                                      ; Configuración de Interrupciones
-000012 e001                          LDI     R16, (1 << PCIE0)    ; Habilitar interrupciones pin-change en PORTB
-000013 9300 0068                     STS     PCICR, R16
+000014 e001                          LDI     R16, (1 << PCIE0)    ; Habilitar interrupciones pin-change en PORTB
+000015 9300 0068                     STS     PCICR, R16
                                  
-000015 e003                          LDI     R16, (1 << PCINT0) | (1 << PCINT1) ; Habilitar interrupciones en PCINT0 y PCINT1
-000016 9300 006b                     STS     PCMSK0, R16
+000017 e003                          LDI     R16, (1 << PCINT0) | (1 << PCINT1) ; Habilitar interrupciones en PCINT0 y PCINT1
+000018 9300 006b                     STS     PCMSK0, R16
                                  
-000018 9478                          SEI     ; Habilitar Interrupciones    
+00001a 9478                          SEI     ; Habilitar interrupciones    
                                  
                                  MAINLOOP:
-000019 b918                          OUT     PORTC, COUNTER
-00001a cffe                          RJMP    MAINLOOP
+00001b cfff                          RJMP    MAINLOOP
                                  
-                                 ; Rutina de Interrupción PCINT0
+                                 ;==============================
+                                 ; RUTINA DE INTERRUPCIÓN PCINT0
+                                 ;==============================
                                  ISR_PCINT0:
-00001b 930f                          PUSH    R16              ; Guardar el contenido de R16 en la pila
-00001c b103                          IN      R16, PINB        ; Leer el estado del puerto B
+00001c 930f                          PUSH    R16
+00001d 932f                          PUSH    TEMP
                                  
-00001d ff01                          SBRS    R16, BTN_INC     ; Si PB1 está en LOW, incrementar
-00001e d004                          RCALL   INCREMENTO
+00001e b123                          IN      TEMP, PINB        ; Leer estado de los botones
                                  
-00001f ff00                          SBRS    R16, BTN_DEC     ; Si PB0 está en LOW, decrementar
-000020 d005                          RCALL   DECREMENTO
+00001f ff21                          SBRS    TEMP, BTN_INC     ; Si PB1 está en LOW, incrementar
+000020 d008                          RCALL   INCREMENTO
+                                 
+000021 ff20                          SBRS    TEMP, BTN_DEC     ; Si PB0 está en LOW, decrementar
+000022 d009                          RCALL   DECREMENTO
+                                 
+000023 940e 002f                     CALL    UPDATE_DISPLAY    ; Asegurar que se muestra el número correcto
+000025 9518                      	RETI
                                  
                                  ISR_END:
-000021 910f                          POP     R16              ; Recuperar R16 antes de salir
-000022 9518                          RETI                     ; Salir de la interrupción
+000026 912f                          POP     TEMP
+000027 910f                          POP     R16
+000028 9518                          RETI
                                  
-                                 ; Incrementar el contador
+                                 ;==============================
+                                 ; INCREMENTAR / DECREMENTAR
+                                 ;==============================
                                  INCREMENTO:
-000023 9513                          INC     COUNTER
-000024 701f                          ANDI    COUNTER, 0x0F   ; Aplicar una máscara para truncar el contador a 4 bits
-000025 9508                          RET                      ; Retornar a ISR_PCINT0
+000029 9513                          INC     COUNTER
+00002a 701f                          ANDI    COUNTER, 0x0F    ; Asegurar que solo cuenta de 0 a 15
+00002b 9508                          RET
                                  
-                                 ; Decrementar el contador
                                  DECREMENTO:
-000026 951a                          DEC     COUNTER
-000027 701f                          ANDI    COUNTER, 0x0F   ; Aplicar una máscara para truncar el contador a 4 bits
-000028 9508                          RET                      ; Retornar a ISR_PCINT0
+00002c 951a                          DEC     COUNTER
+00002d 701f                      	ANDI    COUNTER, 0x0F    ; Asegurar que solo cuenta de 0 a 15
+00002e 9508                      	RET
+                                 
+                                 
+                                 
+                                 ;==============================
+                                 ; ACTUALIZAR DISPLAY
+                                 ;==============================
+                                 UPDATE_DISPLAY:
+00002f e0f1                          LDI     ZH, HIGH(TABLE)      ; Cargar dirección base de la tabla
+000030 e0e0                          LDI     ZL, LOW(TABLE)
+000031 0fe1                          ADD     ZL, COUNTER          ; Sumar el índice correcto
+000032 9104                          LPM     R16, Z               ; Leer el valor del display
+000033 b918                          OUT     PORTC, COUNTER       ; Mostrar el número en PORTC
+000034 b90b                          OUT     PORTD, R16           ; Mostrar en PORTD (display)
+000035 9508                          RET
+                                 
+                                 ;==============================
+                                 ; TABLA DE LOOKUP
+                                 ;==============================
+                                 .org 0x100  ; Asegurar alineación correcta
+                                 TABLE:
+000100 0077                          .dw SEVENSD0
+000101 0041                          .dw SEVENSD1
+000102 003b                          .dw SEVENSD2
+000103 006b                          .dw SEVENSD3
+000104 004d                          .dw SEVENSD4
+000105 006e                          .dw SEVENSD5
+000106 007e                          .dw SEVENSD6
+000107 0043                          .dw SEVENSD7
+000108 007f                          .dw SEVENSD8
+000109 004f                          .dw SEVENSD9
+00010a 005f                          .dw SEVENSDA
+00010b 007c                          .dw SEVENSDB
+00010c 0036                          .dw SEVENSDC
+00010d 0079                          .dw SEVENSDD
+00010e 003e                          .dw SEVENSDE
+00010f 001e                          .dw SEVENSDF
 
 
 RESOURCE USE INFORMATION
@@ -1126,39 +1197,39 @@ counted separately from r26..r31 here.
 .dseg memory usage only counts static data declared with .byte
 
 "ATmega328P" register use summary:
-x  :   0 y  :   0 z  :   0 r0 :   0 r1 :   0 r2 :   0 r3 :   0 r4 :   0 
+x  :   0 y  :   0 z  :   1 r0 :   0 r1 :   0 r2 :   0 r3 :   0 r4 :   0 
 r5 :   0 r6 :   0 r7 :   0 r8 :   0 r9 :   0 r10:   0 r11:   0 r12:   0 
-r13:   0 r14:   0 r15:   0 r16:  19 r17:   5 r18:   0 r19:   0 r20:   0 
+r13:   0 r14:   0 r15:   0 r16:  17 r17:   7 r18:   5 r19:   0 r20:   0 
 r21:   0 r22:   0 r23:   0 r24:   0 r25:   0 r26:   0 r27:   0 r28:   0 
-r29:   0 r30:   0 r31:   0 
-Registers used: 2 out of 35 (5.7%)
+r29:   0 r30:   2 r31:   1 
+Registers used: 6 out of 35 (17.1%)
 
 "ATmega328P" instruction use summary:
-.lds  :   0 .sts  :   0 adc   :   0 add   :   0 adiw  :   0 and   :   0 
+.lds  :   0 .sts  :   0 adc   :   0 add   :   1 adiw  :   0 and   :   0 
 andi  :   2 asr   :   0 bclr  :   0 bld   :   0 brbc  :   0 brbs  :   0 
 brcc  :   0 brcs  :   0 break :   0 breq  :   0 brge  :   0 brhc  :   0 
 brhs  :   0 brid  :   0 brie  :   0 brlo  :   0 brlt  :   0 brmi  :   0 
 brne  :   0 brpl  :   0 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 
-brvs  :   0 bset  :   0 bst   :   0 call  :   0 cbi   :   0 cbr   :   0 
+brvs  :   0 bset  :   0 bst   :   0 call  :   2 cbi   :   0 cbr   :   0 
 clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :   0 cls   :   0 
 clt   :   0 clv   :   0 clz   :   0 com   :   0 cp    :   0 cpc   :   0 
 cpi   :   0 cpse  :   0 dec   :   1 eor   :   0 fmul  :   0 fmuls :   0 
 fmulsu:   0 icall :   0 ijmp  :   0 in    :   1 inc   :   1 jmp   :   2 
-ld    :   0 ldd   :   0 ldi   :   7 lds   :   0 lpm   :   0 lsl   :   0 
+ld    :   0 ldd   :   0 ldi   :   9 lds   :   0 lpm   :   2 lsl   :   0 
 lsr   :   0 mov   :   0 movw  :   0 mul   :   0 muls  :   0 mulsu :   0 
-neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :   6 pop   :   1 
-push  :   1 rcall :   2 ret   :   2 reti  :   1 rjmp  :   1 rol   :   0 
+neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :   7 pop   :   2 
+push  :   2 rcall :   2 ret   :   3 reti  :   2 rjmp  :   1 rol   :   0 
 ror   :   0 sbc   :   0 sbci  :   0 sbi   :   0 sbic  :   0 sbis  :   0 
 sbiw  :   0 sbr   :   0 sbrc  :   0 sbrs  :   2 sec   :   0 seh   :   0 
 sei   :   1 sen   :   0 ser   :   0 ses   :   0 set   :   0 sev   :   0 
 sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :   2 
 sub   :   0 subi  :   0 swap  :   0 tst   :   0 wdr   :   0 
-Instructions used: 16 out of 113 (14.2%)
+Instructions used: 19 out of 113 (16.8%)
 
 "ATmega328P" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x000052     74      0     74   32768   0.2%
+[.cseg] 0x000000 0x000220    100     32    132   32768   0.4%
 [.dseg] 0x000100 0x000100      0      0      0    2048   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 

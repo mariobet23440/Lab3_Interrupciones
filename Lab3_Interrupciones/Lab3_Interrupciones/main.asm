@@ -1,113 +1,24 @@
 ;
-; Lab3_Interrupciones.asm
-;
-; Created: 20/02/2025 22:52:46
-; Author : Mario Alejandro Betancourt Franco
+; Contador en ATmega328P con Display de 7 Segmentos
+; Muestra el mismo número en PORTC y PORTD
 ;
 
-
-; Encabezado
+;==============================
+; ENCABEZADO
+;==============================
 .include "M328PDEF.inc"
+
 .cseg
 .org    0x0000
-JMP     START
+    JMP     START
 .org    PCI0addr
-JMP     ISR_PCINT0
+    JMP     ISR_PCINT0
 
-
-
-; Definiciones
+;==============================
+; DEFINICIONES
+;==============================
 .equ BTN_INC = PB1
 .equ BTN_DEC = PB0
-
-// Lookup Table para Display de 7 Segmentos
-.equ SEVENSD0 =	0b0111_0111
-.equ SEVENSD1 =	0b0100_0001
-.equ SEVENSD2 =	0b0011_1011
-.equ SEVENSD3 =	0b0110_1011
-.equ SEVENSD4 =	0b0100_1101
-.equ SEVENSD5 =	0b0110_1110
-.equ SEVENSD6 =	0b0111_1110
-.equ SEVENSD7 =	0b0100_0011
-.equ SEVENSD8 =	0b0111_1111
-.equ SEVENSD9 =	0b0100_1111
-.equ SEVENSDA =	0b0101_1111
-.equ SEVENSDB =	0b0111_1100
-.equ SEVENSDC =	0b0011_0110
-.equ SEVENSDD =	0b0111_1001
-.equ SEVENSDE =	0b0011_1110
-.equ SEVENSDF =	0b0001_1110 
-
-; Variables (Estos registros NO se tocan en MAINLOOP)
-.def COUNTER = R17
-
-START:
-
-; Configurar la pila
-LDI     R16, LOW(RAMEND)
-OUT     SPL, R16
-LDI     R16, HIGH(RAMEND)
-OUT     SPH, R16
-
-SETUP:
-    ; Activación de pines de entrada en el puerto B
-    LDI     R16, 0xFF            ; Habilitar pull-ups internos
-    OUT     PORTB, R16
-
-    ; Activación de pines de salida en el puerto C
-    LDI     R16, 0xFF
-    OUT     DDRC, R16
-    LDI     R16, 0x00
-    OUT     PORTC, R16
-    
-    ; Configuración de Interrupciones
-    LDI     R16, (1 << PCIE0)    ; Habilitar interrupciones pin-change en PORTB
-    STS     PCICR, R16
-
-    LDI     R16, (1 << PCINT0) | (1 << PCINT1) ; Habilitar interrupciones en PCINT0 y PCINT1
-    STS     PCMSK0, R16
-
-    SEI     ; Habilitar Interrupciones    
-
-MAINLOOP:
-    OUT     PORTC, COUNTER
-    RJMP    MAINLOOP
-
-; Rutina de Interrupción PCINT0
-ISR_PCINT0:
-    PUSH    R16              ; Guardar el contenido de R16 en la pila
-    IN      R16, PINB        ; Leer el estado del puerto B
-
-    SBRS    R16, BTN_INC     ; Si PB1 está en LOW, incrementar
-    RCALL   INCREMENTO
-
-    SBRS    R16, BTN_DEC     ; Si PB0 está en LOW, decrementar
-    RCALL   DECREMENTO
-
-ISR_END:
-    POP     R16              ; Recuperar R16 antes de salir
-    RETI                     ; Salir de la interrupción
-
-; Incrementar el contador
-INCREMENTO:
-    INC     COUNTER
-    ANDI    COUNTER, 0x0F   ; Aplicar una máscara para truncar el contador a 4 bits
-    RET                      ; Retornar a ISR_PCINT0
-
-; Decrementar el contador
-DECREMENTO:
-    DEC     COUNTER
-    ANDI    COUNTER, 0x0F   ; Aplicar una máscara para truncar el contador a 4 bits
-    RET                      ; Retornar a ISR_PCINT0
-
-
-/*
-; Definiciones
-.include "m328Pdef.inc"
-
-.equ BTN_INC = PB0       ; Botón de incremento
-.equ BTN_DEC = PB1       ; Botón de decremento
-.equ DISP = PORTD        ; Puerto del display
 
 ; Lookup Table para Display de 7 Segmentos (cátodo común)
 .equ SEVENSD0 = 0b01110111
@@ -120,58 +31,107 @@ DECREMENTO:
 .equ SEVENSD7 = 0b01000011
 .equ SEVENSD8 = 0b01111111
 .equ SEVENSD9 = 0b01001111
+.equ SEVENSDA = 0b01011111
+.equ SEVENSDB = 0b01111100
+.equ SEVENSDC = 0b00110110
+.equ SEVENSDD = 0b01111001
+.equ SEVENSDE = 0b00111110
+.equ SEVENSDF = 0b00011110 
 
-; ==========================
-; SECCIÓN DE CÓDIGO PRINCIPAL
-; ==========================
+; Variables
+.def COUNTER = R17
+.def TEMP = R18
 
-.cseg
-.org 0x00
-    rjmp RESET
+;==============================
+; INICIALIZACIÓN
+;==============================
+START:
+    ; Configurar la pila
+    LDI     R16, LOW(RAMEND)
+    OUT     SPL, R16
+    LDI     R16, HIGH(RAMEND)
+    OUT     SPH, R16
 
-RESET:
-    ldi r16, 0xFF
-    out DDRD, r16         ; Configura PORTD como salida (para el display)
-    
-    ldi r16, 0x03
-    out PORTB, r16        ; Activa pull-ups en PB0 y PB1
+SETUP:
+    ; Configurar botones (entrada con pull-ups)
+    LDI     R16, 0xFF
+    OUT     PORTB, R16
 
-    clr r17               ; Inicializa contador en 0
-    rjmp MAIN_LOOP
+    ; Configurar displays como salida
+    LDI     R16, 0xFF
+    OUT     DDRC, R16
+    OUT     DDRD, R16
 
-MAIN_LOOP:
-    sbic PINB, BTN_INC    ; Si el botón de incremento está presionado
-    rjmp INC_COUNT
+    ; Inicializar contador en 0
+    LDI     COUNTER, 0x00
+    CALL    UPDATE_DISPLAY
 
-    sbic PINB, BTN_DEC    ; Si el botón de decremento está presionado
-    rjmp DEC_COUNT
+    ; Configuración de Interrupciones
+    LDI     R16, (1 << PCIE0)    ; Habilitar interrupciones pin-change en PORTB
+    STS     PCICR, R16
 
-    rjmp MAIN_LOOP        ; Repite el bucle
+    LDI     R16, (1 << PCINT0) | (1 << PCINT1) ; Habilitar interrupciones en PCINT0 y PCINT1
+    STS     PCMSK0, R16
 
-INC_COUNT:
-    cpi r17, 9            ; Si ya es 9, no incrementa
-    breq MAIN_LOOP
-    inc r17               ; Incrementa el contador
-    rjmp UPDATE_DISPLAY
+    SEI     ; Habilitar interrupciones    
 
-DEC_COUNT:
-    cpi r17, 0            ; Si ya es 0, no decrementa
-    breq MAIN_LOOP
-    dec r17               ; Decrementa el contador
+MAINLOOP:
+    RJMP    MAINLOOP
 
+;==============================
+; RUTINA DE INTERRUPCIÓN PCINT0
+;==============================
+ISR_PCINT0:
+    PUSH    R16
+    PUSH    TEMP
+
+    IN      TEMP, PINB        ; Leer estado de los botones
+
+    SBRS    TEMP, BTN_INC     ; Si PB1 está en LOW, incrementar
+    RCALL   INCREMENTO
+
+    SBRS    TEMP, BTN_DEC     ; Si PB0 está en LOW, decrementar
+    RCALL   DECREMENTO
+
+    CALL    UPDATE_DISPLAY    ; Asegurar que se muestra el número correcto
+	RETI
+
+ISR_END:
+    POP     TEMP
+    POP     R16
+    RETI
+
+;==============================
+; INCREMENTAR / DECREMENTAR
+;==============================
+INCREMENTO:
+    INC     COUNTER
+    ANDI    COUNTER, 0x0F    ; Asegurar que solo cuenta de 0 a 15
+    RET
+
+DECREMENTO:
+    DEC     COUNTER
+	ANDI    COUNTER, 0x0F    ; Asegurar que solo cuenta de 0 a 15
+	RET
+
+
+
+;==============================
+; ACTUALIZAR DISPLAY
+;==============================
 UPDATE_DISPLAY:
-    ldi ZH, high(TABLE * 2)  ; La tabla está en memoria de programa (se accede en palabras)
-    ldi ZL, low(TABLE * 2)
-    add ZL, r17               ; Apunta al índice correcto
-    lpm r16, Z                ; Carga el valor del display
-    out DISP, r16             ; Muestra el número
-    rjmp MAIN_LOOP
+    LDI     ZH, HIGH(TABLE)      ; Cargar dirección base de la tabla
+    LDI     ZL, LOW(TABLE)
+    ADD     ZL, COUNTER          ; Sumar el índice correcto
+    LPM     R16, Z               ; Leer el valor del display
+    OUT     PORTC, COUNTER       ; Mostrar el número en PORTC
+    OUT     PORTD, R16           ; Mostrar en PORTD (display)
+    RET
 
-; ==========================
-; SECCIÓN DE TABLA EN MEMORIA DE PROGRAMA
-; ==========================
-
-.org 0x100  ; Dirección alineada correctamente en memoria de programa
+;==============================
+; TABLA DE LOOKUP
+;==============================
+.org 0x100  ; Asegurar alineación correcta
 TABLE:
     .dw SEVENSD0
     .dw SEVENSD1
@@ -183,5 +143,9 @@ TABLE:
     .dw SEVENSD7
     .dw SEVENSD8
     .dw SEVENSD9
-
-*/
+    .dw SEVENSDA
+    .dw SEVENSDB
+    .dw SEVENSDC
+    .dw SEVENSDD
+    .dw SEVENSDE
+    .dw SEVENSDF

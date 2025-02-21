@@ -23,12 +23,14 @@
   <FILE>Lab3_Interrupciones.lss</FILE>
  </OUTPUT_FILES>
  <LABELS>
-  <START><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>23</LINE></START>
-  <ISR_PCINT0><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>56</LINE></ISR_PCINT0>
-  <SETUP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>31</LINE></SETUP>
-  <MAINLOOP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>51</LINE></MAINLOOP>
-  <INCREMENTO><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>71</LINE></INCREMENTO>
-  <DECREMENTO><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>77</LINE></DECREMENTO>
-  <ISR_END><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>66</LINE></ISR_END>
+  <START><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>48</LINE></START>
+  <ISR_PCINT0><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>84</LINE></ISR_PCINT0>
+  <SETUP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>55</LINE></SETUP>
+  <UPDATE_DISPLAY><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>122</LINE></UPDATE_DISPLAY>
+  <MAINLOOP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>78</LINE></MAINLOOP>
+  <INCREMENTO><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>107</LINE></INCREMENTO>
+  <DECREMENTO><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>112</LINE></DECREMENTO>
+  <ISR_END><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>99</LINE></ISR_END>
+  <TABLE><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>135</LINE></TABLE>
  </LABELS>
 </ASSEMBLER_INFO>
