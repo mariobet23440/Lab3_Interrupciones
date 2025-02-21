@@ -19,23 +19,12 @@
 .def SEVENSD_OUT = R21								; Registro temporal
 .def COUNTER_COUNTER = R24							; Contador adicional
 
-// Lookup Table para Display de 7 Segmentos
-.equ SEVENSD0 =	0b0111_0111
-.equ SEVENSD1 =	0b0100_0001
-.equ SEVENSD2 =	0b0011_1011
-.equ SEVENSD3 =	0b0110_1011
-.equ SEVENSD4 =	0b0100_1101
-.equ SEVENSD5 =	0b0110_1110
-.equ SEVENSD6 =	0b0111_1110
-.equ SEVENSD7 =	0b0100_0011
-.equ SEVENSD8 =	0b0111_1111
-.equ SEVENSD9 =	0b0100_1111
-.equ SEVENSDA =	0b0101_1111
-.equ SEVENSDB =	0b0111_1100
-.equ SEVENSDC =	0b0011_0110
-.equ SEVENSDD =	0b0111_1001
-.equ SEVENSDE =	0b0011_1110
-.equ SEVENSDF =	0b0001_1110 
+// Definiciones
+.equ BTN_INC = PB1
+.equ BTN_DEC = PB0
+
+// Variables (Estos registros NO se tocan en MAINLOOP)
+.def COUNTER = R16
 
 // Configurar la pila
 LDI     R16, LOW(RAMEND)
@@ -47,14 +36,8 @@ SETUP:
 	// Activación de pines de entrada en el puerto B
     LDI     R16, 0x00
     OUT     DDRB, R16
-    LDI     R16, 0xFF	
+    LDI     R16, 0xFF			// Habilitar pull-ups internos
     OUT     PORTB, R16
-	
-	// Activación de pines de salida en el puerto C
-    LDI     R16, 0xFF
-    OUT     DDRC, R16
-    LDI     R16, 0xF0
-    OUT     PORTC, R16
 
 	// Activación de pines de salida en el puerto D
     LDI     R16, 0xFF
@@ -70,3 +53,6 @@ SETUP:
 	OUT		PCMSK0, R16
 
 	SEI		// Habilitar Interrupciones	
+
+MAINLOOP:
+	
