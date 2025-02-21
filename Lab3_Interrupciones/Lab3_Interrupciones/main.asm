@@ -5,9 +5,6 @@
 ; Author : Mario Alejandro Betancourt Franco
 ;
 
-
-
-
 // Encabezado
 .include "M328PDEF.inc"
 .cseg
@@ -50,34 +47,26 @@ SETUP:
 	// Activación de pines de entrada en el puerto B
     LDI     R16, 0x00
     OUT     DDRB, R16
-    LDI     R16, 0xFF	// Desactivar salidas inicialmente
-    OUT     PORTB, R16	// Por alguna razón no funciona si usamos algunos bits de PORTC como entradas y otros como salidas
-	// Sin embargo, usar el puerto B solo para recibir entradas fue una solución rápida que terminó funcionando.
+    LDI     R16, 0xFF	
+    OUT     PORTB, R16
 	
 	// Activación de pines de salida en el puerto C
-    LDI     R16, 0xFF	// Primeros cuatro bits como salidas y los primeros dos bits como entradas
+    LDI     R16, 0xFF
     OUT     DDRC, R16
-    LDI     R16, 0xF0	// Activar Pull-ups en entradas y desactivar salidas inicialmente
+    LDI     R16, 0xF0
     OUT     PORTC, R16
 
 	// Activación de pines de salida en el puerto D
-    LDI     R16, 0xFF	// Primeros cuatro bits como salidas y los primeros dos bits como entradas
+    LDI     R16, 0xFF
     OUT     DDRD, R16
-    LDI     R16, 0x00	// Desactivar salidas inicialmente
+    LDI     R16, 0x00
     OUT     PORTD, R16
+	
+	// Configuración de Interrupciones
+	LDI		R16, (1 << PCIE0)	// Habilitar interrupciones pin-change en PORTB
+	OUT		PCICR, R16
 
-	// Configurar Prescaler Principal
-	LDI		R16, (1 << CLKPCE)
-	STS     CLKPR, R16          // Habilitar cambio de PRESCALER
-    LDI     R16, 0x04			// CAMBIAR A 0X04
-    STS     CLKPR, R16          // Configurar Prescaler a 1 MHz
+	LDI		R16, (1 << PCINT0) | (1 << PCINT1) // Habilitar interrupciones en PCINT0 y PCINT1
+	OUT		PCMSK0, R16
 
-	// Inicializar timer0
-    CALL    INIT_TMR0
-
-	// Inicializar GPRs
-	CLR		COUNTER_TEMP
-	CLR		COUNTER_SECONDS
-	CLR		COUNTER_BUTTON
-	CLR		SEVENSD_OUT
-	CLR		COUNTER_COUNTER
+	SEI		// Habilitar Interrupciones	
