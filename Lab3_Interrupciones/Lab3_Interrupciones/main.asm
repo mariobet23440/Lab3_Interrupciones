@@ -39,20 +39,45 @@ SETUP:
     LDI     R16, 0xFF			// Habilitar pull-ups internos
     OUT     PORTB, R16
 
-	// Activación de pines de salida en el puerto D
+	// Activación de pines de salida en el puerto C
     LDI     R16, 0xFF
-    OUT     DDRD, R16
+    OUT     DDRC, R16
     LDI     R16, 0x00
-    OUT     PORTD, R16
+    OUT     PORTC, R16
 	
 	// Configuración de Interrupciones
 	LDI		R16, (1 << PCIE0)	// Habilitar interrupciones pin-change en PORTB
-	OUT		PCICR, R16
+	STS		PCICR, R16
 
 	LDI		R16, (1 << PCINT0) | (1 << PCINT1) // Habilitar interrupciones en PCINT0 y PCINT1
-	OUT		PCMSK0, R16
+	STS		PCMSK0, R16
 
 	SEI		// Habilitar Interrupciones	
 
 MAINLOOP:
+	OUT		PORTC, COUNTER
+	RJMP	MAINLOOP
+
+
+// Rutinas de Interrupción
+ISR_PCINT0:
+	IN		R17, PINB
+	SBRS	R17, BTN_INC
+	RJMP	INCREMENTO
+	
+	SBRS	R17, BTN_DEC
+	RJMP	DECREMENTO
+	
+	RETI
+	
+INCREMENTO:
+	INC		COUNTER
+	ANDI	COUNTER, 0X0F	// Aplicar una máscara para truncar el contador a 4 bits 
+	RETI
+
+DECREMENTO:
+	DEC		COUNTER
+	ANDI	COUNTER, 0X0F	// Aplicar una máscara para truncar el contador a 4 bits
+	RETI
+		
 	
