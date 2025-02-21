@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Thu Feb 20 23:27:11 2025
+AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Thu Feb 20 23:51:19 2025
 
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
 C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm(9): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\M328PDEF.inc'
@@ -1093,23 +1093,26 @@ C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\La
                                  // Rutinas de Interrupción
                                  ISR_PCINT0:
 000015 b113                      	IN		R17, PINB
-000016 ff11                      	SBRS	R17, BTN_INC
-000017 c003                      	RJMP	INCREMENTO
+000016 fd11                      	SBRC	R17, BTN_INC
+000017 c004                      	RJMP	INCREMENTO
                                  	
-000018 ff10                      	SBRS	R17, BTN_DEC
-000019 c004                      	RJMP	DECREMENTO
+000018 fd10                      	SBRC	R17, BTN_DEC
+000019 c006                      	RJMP	DECREMENTO
+00001a 9ad8                      	SBI     PCIFR, PCIF0  ; Limpiar el flag de interrupción
                                  	
-00001a 9518                      	RETI
+00001b 9518                      	RETI
                                  	
                                  INCREMENTO:
-00001b 9503                      	INC		COUNTER
-00001c 700f                      	ANDI	COUNTER, 0X0F	// Aplicar una máscara para truncar el contador a 4 bits 
-00001d 9518                      	RETI
+00001c 9503                      	INC		COUNTER
+00001d 700f                      	ANDI	COUNTER, 0X0F	// Aplicar una máscara para truncar el contador a 4 bits 
+00001e 9ad8                      	SBI     PCIFR, PCIF0  ; Limpiar el flag de interrupción
+00001f 9518                      	RETI
                                  
                                  DECREMENTO:
-00001e 950a                      	DEC		COUNTER
-00001f 700f                      	ANDI	COUNTER, 0X0F	// Aplicar una máscara para truncar el contador a 4 bits
-000020 9518                      	RETI
+000020 950a                      	DEC		COUNTER
+000021 700f                      	ANDI	COUNTER, 0X0F	// Aplicar una máscara para truncar el contador a 4 bits
+000022 9ad8                      	SBI     PCIFR, PCIF0  ; Limpiar el flag de interrupción
+000023 9518                      	RETI
                                  		
 
 
@@ -1150,17 +1153,17 @@ ld    :   0 ldd   :   0 ldi   :   8 lds   :   0 lpm   :   0 lsl   :   0
 lsr   :   0 mov   :   0 movw  :   0 mul   :   0 muls  :   0 mulsu :   0 
 neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :   7 pop   :   0 
 push  :   0 rcall :   0 ret   :   0 reti  :   3 rjmp  :   3 rol   :   0 
-ror   :   0 sbc   :   0 sbci  :   0 sbi   :   0 sbic  :   0 sbis  :   0 
-sbiw  :   0 sbr   :   0 sbrc  :   0 sbrs  :   2 sec   :   0 seh   :   0 
+ror   :   0 sbc   :   0 sbci  :   0 sbi   :   3 sbic  :   0 sbis  :   0 
+sbiw  :   0 sbr   :   0 sbrc  :   2 sbrs  :   0 sec   :   0 seh   :   0 
 sei   :   1 sen   :   0 ser   :   0 ses   :   0 set   :   0 sev   :   0 
 sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :   2 
 sub   :   0 subi  :   0 swap  :   0 tst   :   0 wdr   :   0 
-Instructions used: 11 out of 113 (9.7%)
+Instructions used: 12 out of 113 (10.6%)
 
 "ATmega328P" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x000042     66      0     66   32768   0.2%
+[.cseg] 0x000000 0x000048     72      0     72   32768   0.2%
 [.dseg] 0x000100 0x000100      0      0      0    2048   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 

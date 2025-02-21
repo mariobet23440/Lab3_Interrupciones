@@ -26,7 +26,7 @@
   <SETUP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>35</LINE></SETUP>
   <MAINLOOP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>57</LINE></MAINLOOP>
   <ISR_PCINT0><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>63</LINE></ISR_PCINT0>
-  <INCREMENTO><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>73</LINE></INCREMENTO>
-  <DECREMENTO><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>78</LINE></DECREMENTO>
+  <INCREMENTO><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>74</LINE></INCREMENTO>
+  <DECREMENTO><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>80</LINE></DECREMENTO>
  </LABELS>
 </ASSEMBLER_INFO>
