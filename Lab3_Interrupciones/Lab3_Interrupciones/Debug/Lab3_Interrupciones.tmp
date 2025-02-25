@@ -22,8 +22,12 @@
   <FILE>Lab3_Interrupciones.lss</FILE>
  </OUTPUT_FILES>
  <LABELS>
-  <START><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>27</LINE></START>
-  <TABLA><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>23</LINE></TABLA>
-  <MAINLOOP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>57</LINE></MAINLOOP>
+  <START><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>31</LINE></START>
+  <PCINT_ISR><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>76</LINE></PCINT_ISR>
+  <TABLA><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>27</LINE></TABLA>
+  <MAINLOOP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>71</LINE></MAINLOOP>
+  <INCREMENT><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>95</LINE></INCREMENT>
+  <DECREMENT><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>104</LINE></DECREMENT>
+  <UPDATE_DISPLAY><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>110</LINE></UPDATE_DISPLAY>
  </LABELS>
 </ASSEMBLER_INFO>

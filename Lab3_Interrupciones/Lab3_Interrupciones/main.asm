@@ -14,6 +14,10 @@
 .org	0x000
 	RJMP	START
 
+// Interrupciones PIN CHANGE
+.org PCI0addr
+	RJMP PCINT_ISR		; Vector de interrupción de Pin Change
+
 // Registros
 .def	COUNTER = R17
 .def	OUT_PORTD = R18
@@ -31,9 +35,14 @@ START:
 	LDI		R16, HIGH(RAMEND)
 	OUT		SPH, R16
 
+	// Inicializar contador
+	CLR		COUNTER
+
 	// Cargar en Z la dirección de la tabla
-	LDI		ZL, LOW(TABLA*2)	// Multiplicamos por dos porque usamos la FLASH
-	LDI		ZH, HIGH(TABLA*2)
+	LDI		ZL, LOW(TABLA * 2)
+	LDI		ZH, HIGH(TABLA * 2)
+	LPM		OUT_PORTD, Z
+	OUT		PORTD, OUT_PORTD
 
 	// Configurar los pines de PORTB como entradas
 	LDI		R16, (1 << PB0) | (1 << PB1)
@@ -49,29 +58,72 @@ START:
 	LDI		R16, 0X08			// Utilizar un prescaler de 16
 	STS		CLKPR, R16
 
+	; Habilitar interrupciones de cambio de pin en PCINT0 y PCINT1
+	LDI		R16, (1 << PCIE0)
+	STS		PCICR, R16
+	LDI		R16, (1 << PCINT0) | (1 << PCINT1)
+	STS		PCMSK0, R16
 
-	// Inicializar contador
-	CLR		COUNTER
+	; Habilitar interrupciones globales
+	SEI
 
 
 MAINLOOP:
-	// Guardar la dirección en Z e incrementar si PB0 está presionado
+	RJMP	MAINLOOP
+
+// RUTINAS DE INTERRUPCIÓN -----------------------------------------------------
+
+PCINT_ISR:
+	PUSH	R16  ; Guardar registro random
+	IN      R16, SREG   ; Guardar el estado de los flags
+	PUSH	R16  ; Guardar registro random
+
+	// Si PB0 está presionado, incrementar
 	SBIC	PINB, PB0
-	LPM		OUT_PORTD, Z+
-	SBIC	PINB, PB0
+	RJMP	INCREMENT
+
+	// Si PB0 está presionado, decrementar
+	SBIC	PINB, PB1
+	RJMP	DECREMENT
+
+	POP R16
+    OUT SREG, R16
+	POP		R16  ; Sacar registro random
+	RETI
+
+// Incrementar el contador hasta máximo 10 y reiniciar
+INCREMENT:
 	INC		COUNTER
+	CPI		COUNTER, 10
+	BRLO	UPDATE_DISPLAY
+	LDI		COUNTER, 0
+	RJMP	UPDATE_DISPLAY
 
-	// Sacar en PORTD
-	OUT		PORTD, OUT_PORTD
 
-	// Incrementar el contador
-	CPI		COUNTER, 10		// Si el contador es menor a 10 regresar a MAINLOOP
-	BRNE	MAINLOOP
+// Incrementar el contador hasta mínimo 0 y reiniciar a 9
+DECREMENT:
+	DEC		COUNTER
+	BRPL	UPDATE_DISPLAY
+	LDI		COUNTER, 9
+	RJMP	UPDATE_DISPLAY
 
-	// Reiniciar puntero y contador
+UPDATE_DISPLAY:
 	LDI		ZL, LOW(TABLA * 2)
 	LDI		ZH, HIGH(TABLA * 2)
-	LDI		COUNTER, 0
+	
+	
+	; Multiplicar COUNTER por 2 y sumarlo a Z
+    MOV		R16, COUNTER
+    ADD		ZL, R16
+    CLR		R1				; Asegurar que no haya residuos en R1
+    ADC		ZH, R1			; Sumar acarreo a ZH
 
-	RJMP	MAINLOOP
+    ; Extraer el valor de la dirección a la que Z está apuntando
+    LPM		OUT_PORTD, Z
+	OUT		PORTD, OUT_PORTD
+
+	POP		R16
+    OUT		SREG, R16
+	POP		R16  ; Sacar registro random
+	RETI
 
