@@ -35,6 +35,10 @@ START:
 	LDI		ZL, LOW(TABLA*2)	// Multiplicamos por dos porque usamos la FLASH
 	LDI		ZH, HIGH(TABLA*2)
 
+	// Configurar los pines de PORTB como entradas
+	LDI		R16, (1 << PB0) | (1 << PB1)
+	OUT		PORTB, R16
+
 	// Configurar los pines de PORTD como salidas
 	LDI		R16, 0XFF
 	OUT		DDRD, R16
@@ -51,12 +55,16 @@ START:
 
 
 MAINLOOP:
-	// Sacar en PORTD la dirección en Z e incrementar
+	// Guardar la dirección en Z e incrementar si PB0 está presionado
+	SBIC	PINB, PB0
 	LPM		OUT_PORTD, Z+
+	SBIC	PINB, PB0
+	INC		COUNTER
+
+	// Sacar en PORTD
 	OUT		PORTD, OUT_PORTD
 
 	// Incrementar el contador
-	INC		COUNTER
 	CPI		COUNTER, 10		// Si el contador es menor a 10 regresar a MAINLOOP
 	BRNE	MAINLOOP
 

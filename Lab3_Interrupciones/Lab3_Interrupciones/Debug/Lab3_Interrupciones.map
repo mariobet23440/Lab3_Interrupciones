@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Mon Feb 24 18:56:52 2025
+AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Mon Feb 24 19:08:25 2025
 
 
 EQU  SIGNATURE_000 0000001e
@@ -699,4 +699,4 @@ CSEG START        00000105
 DEF  COUNTER      r17
 DEF  OUT_PORTD    r18
 CSEG TABLA        00000100
-CSEG MAINLOOP     00000114
+CSEG MAINLOOP     00000116

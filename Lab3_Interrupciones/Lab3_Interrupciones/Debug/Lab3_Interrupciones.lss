@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Mon Feb 24 18:56:52 2025
+AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Mon Feb 24 19:08:25 2025
 
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
@@ -1025,37 +1025,46 @@ AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab
 000109 e0e0                      	LDI		ZL, LOW(TABLA*2)	// Multiplicamos por dos porque usamos la FLASH
 00010a e0f2                      	LDI		ZH, HIGH(TABLA*2)
                                  
+                                 	// Configurar los pines de PORTB como entradas
+00010b e003                      	LDI		R16, (1 << PB0) | (1 << PB1)
+00010c b905                      	OUT		PORTB, R16
+                                 
                                  	// Configurar los pines de PORTD como salidas
-00010b ef0f                      	LDI		R16, 0XFF
-00010c b90a                      	OUT		DDRD, R16
+00010d ef0f                      	LDI		R16, 0XFF
+00010e b90a                      	OUT		DDRD, R16
                                  
                                  	// Configuración de reloj de sistema
-00010d e800                      	LDI		R16, (1 << CLKPCE)	// Establecer el bit para habilitar Prescalers
-00010e 9300 0061                 	STS		CLKPR, R16
-000110 e008                      	LDI		R16, 0X08			// Utilizar un prescaler de 16
-000111 9300 0061                 	STS		CLKPR, R16
+00010f e800                      	LDI		R16, (1 << CLKPCE)	// Establecer el bit para habilitar Prescalers
+000110 9300 0061                 	STS		CLKPR, R16
+000112 e008                      	LDI		R16, 0X08			// Utilizar un prescaler de 16
+000113 9300 0061                 	STS		CLKPR, R16
                                  
                                  
                                  	// Inicializar contador
-000113 2711                      	CLR		COUNTER
+000115 2711                      	CLR		COUNTER
                                  
                                  
                                  MAINLOOP:
-                                 	// Sacar en PORTD la dirección en Z e incrementar
-000114 9125                      	LPM		OUT_PORTD, Z+
-000115 b92b                      	OUT		PORTD, OUT_PORTD
+                                 	// Guardar la dirección en Z e incrementar si PB0 está presionado
+000116 9918                      	SBIC	PINB, PB0
+000117 9125                      	LPM		OUT_PORTD, Z+
+000118 9918                      	SBIC	PINB, PB0
+000119 9513                      	INC		COUNTER
+                                 
+                                 
+                                 	// Sacar en PORTD
+00011a b92b                      	OUT		PORTD, OUT_PORTD
                                  
                                  	// Incrementar el contador
-000116 9513                      	INC		COUNTER
-000117 301a                      	CPI		COUNTER, 10		// Si el contador es menor a 10 regresar a MAINLOOP
-000118 f7d9                      	BRNE	MAINLOOP
+00011b 301a                      	CPI		COUNTER, 10		// Si el contador es menor a 10 regresar a MAINLOOP
+00011c f7c9                      	BRNE	MAINLOOP
                                  
                                  	// Reiniciar puntero y contador
-000119 e0e0                      	LDI		ZL, LOW(TABLA * 2)
-00011a e0f2                      	LDI		ZH, HIGH(TABLA * 2)
-00011b e010                      	LDI		COUNTER, 0
+00011d e0e0                      	LDI		ZL, LOW(TABLA * 2)
+00011e e0f2                      	LDI		ZH, HIGH(TABLA * 2)
+00011f e010                      	LDI		COUNTER, 0
                                  
-00011c cff7                      	RJMP	MAINLOOP
+000120 cff5                      	RJMP	MAINLOOP
                                  
 
 
@@ -1076,7 +1085,7 @@ counted separately from r26..r31 here.
 "ATmega328P" register use summary:
 x  :   0 y  :   0 z  :   1 r0 :   0 r1 :   0 r2 :   0 r3 :   0 r4 :   0 
 r5 :   0 r6 :   0 r7 :   0 r8 :   0 r9 :   0 r10:   0 r11:   0 r12:   0 
-r13:   0 r14:   0 r15:   0 r16:  10 r17:   4 r18:   2 r19:   0 r20:   0 
+r13:   0 r14:   0 r15:   0 r16:  12 r17:   4 r18:   2 r19:   0 r20:   0 
 r21:   0 r22:   0 r23:   0 r24:   0 r25:   0 r26:   0 r27:   0 r28:   0 
 r29:   0 r30:   2 r31:   2 
 Registers used: 6 out of 35 (17.1%)
@@ -1092,21 +1101,21 @@ clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :   1 cls   :   0
 clt   :   0 clv   :   0 clz   :   0 com   :   0 cp    :   0 cpc   :   0 
 cpi   :   1 cpse  :   0 dec   :   0 eor   :   0 fmul  :   0 fmuls :   0 
 fmulsu:   0 icall :   0 ijmp  :   0 in    :   0 inc   :   1 jmp   :   0 
-ld    :   0 ldd   :   0 ldi   :  10 lds   :   0 lpm   :   1 lsl   :   0 
+ld    :   0 ldd   :   0 ldi   :  11 lds   :   0 lpm   :   1 lsl   :   0 
 lsr   :   0 mov   :   0 movw  :   0 mul   :   0 muls  :   0 mulsu :   0 
-neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :   4 pop   :   0 
+neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :   5 pop   :   0 
 push  :   0 rcall :   0 ret   :   0 reti  :   0 rjmp  :   2 rol   :   0 
-ror   :   0 sbc   :   0 sbci  :   0 sbi   :   0 sbic  :   0 sbis  :   0 
+ror   :   0 sbc   :   0 sbci  :   0 sbi   :   0 sbic  :   2 sbis  :   0 
 sbiw  :   0 sbr   :   0 sbrc  :   0 sbrs  :   0 sec   :   0 seh   :   0 
 sei   :   0 sen   :   0 ser   :   0 ses   :   0 set   :   0 sev   :   0 
 sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :   2 
 sub   :   0 subi  :   0 swap  :   0 tst   :   0 wdr   :   0 
-Instructions used: 9 out of 113 (8.0%)
+Instructions used: 10 out of 113 (8.8%)
 
 "ATmega328P" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x00023a     50     10     60   32768   0.2%
+[.cseg] 0x000000 0x000242     58     10     68   32768   0.2%
 [.dseg] 0x000100 0x000100      0      0      0    2048   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 
