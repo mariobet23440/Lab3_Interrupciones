@@ -14,8 +14,56 @@
 .org	0x000
 	RJMP	START
 
-// Definir la tabla en la memoria FLASH
-.org	0x100
+// Registros
+.def	COUNTER = R17
+.def	OUT_PORTD = R18
 
+// Definir la tabla en la memoria FLASH (Números del 1 al 10 en display de 7 segmentos)
+.org	0x100
+TABLA:
+    .db 0x77, 0x41, 0x3B, 0x6B, 0x4D, 0x6E, 0x7E, 0x43, 0x7F, 0x4F
+
+// Setup
 START:
-	
+	// Configuración de la pila
+	LDI		R16, LOW(RAMEND)
+	OUT		SPL, R16
+	LDI		R16, HIGH(RAMEND)
+	OUT		SPH, R16
+
+	// Cargar en Z la dirección de la tabla
+	LDI		ZL, LOW(TABLA*2)	// Multiplicamos por dos porque usamos la FLASH
+	LDI		ZH, HIGH(TABLA*2)
+
+	// Configurar los pines de PORTD como salidas
+	LDI		R16, 0XFF
+	OUT		DDRD, R16
+
+	// Configuración de reloj de sistema
+	LDI		R16, (1 << CLKPCE)	// Establecer el bit para habilitar Prescalers
+	STS		CLKPR, R16
+	LDI		R16, 0X08			// Utilizar un prescaler de 16
+	STS		CLKPR, R16
+
+
+	// Inicializar contador
+	CLR		COUNTER
+
+
+MAINLOOP:
+	// Sacar en PORTD la dirección en Z e incrementar
+	LPM		OUT_PORTD, Z+
+	OUT		PORTD, OUT_PORTD
+
+	// Incrementar el contador
+	INC		COUNTER
+	CPI		COUNTER, 10		// Si el contador es menor a 10 regresar a MAINLOOP
+	BRNE	MAINLOOP
+
+	// Reiniciar puntero y contador
+	LDI		ZL, LOW(TABLA * 2)
+	LDI		ZH, HIGH(TABLA * 2)
+	LDI		COUNTER, 0
+
+	RJMP	MAINLOOP
+

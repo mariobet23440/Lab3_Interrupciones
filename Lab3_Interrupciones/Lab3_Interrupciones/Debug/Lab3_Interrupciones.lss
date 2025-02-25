@@ -1,10 +1,8 @@
 
-AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Fri Feb 21 06:39:52 2025
+AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Mon Feb 24 18:56:52 2025
 
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
-C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm(29): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\M328PDEF.inc'
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
-C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm(29): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\M328PDEF.inc'
                                  
                                  ;
                                  
@@ -993,302 +991,71 @@ C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\La
                                  ; Author : Mario Alejandro Betancourt Franco
                                  ;
                                  
-                                 /*
-                                 CONFIGUACI?N DE TIMER0
-                                 Estamos usando TIMER0 como un temporizador en modo NORMAL. 
-                                 t_delay = 1 s
-                                 f_clk = 1 MHz
-                                 n = 8 (Recordemos que es el n?mero de bits del registro del *contador*)
+                                 ; NOTA: Voy a tirar todo el progreso previo y empezaré el código desde cero.
+                                 ;       Quiero entender qué estoy haciendo
                                  
-                                 Prescaler >= (t_delay * f_clk) / 2**n = (0.1*10E6)(2POW(8)) = 390
-                                 Prescaler >= 390
-                                 Escogemos un prescaler de 1024
+                                 // - DIRECTIVAS DEL ENSAMBLADOR -
+                                 // Iniciar el código
+                                 .cseg		
+                                 .org	0x000
+000000 c104                      	RJMP	START
                                  
-                                 Calculamos el tiempo m?ximo que puede contar TIMER0
-                                 Tmax = (2**n * Prescaler) / f_clk = (2**8 * 1024) / 10E6 = 0.262s = 262 ms 
+                                 // Registros
+                                 .def	COUNTER = R17
+                                 .def	OUT_PORTD = R18
                                  
-                                 Determinamos el valor inicial de TIMER0
-                                 TCNT0 = 256 - (f_clk * t_deseado) / Prescaler = 256 - (10E6 * 0.100) / 1024 = 158
+                                 // Definir la tabla en la memoria FLASH (Números del 1 al 10 en display de 7 segmentos)
+                                 .org	0x100
+                                 TABLA:
+000100 4177
+000101 6b3b
+000102 6e4d
+000103 437e
+000104 4f7f                          .db 0x77, 0x41, 0x3B, 0x6B, 0x4D, 0x6E, 0x7E, 0x43, 0x7F, 0x4F
                                  
-                                 Con este c?lculo el contador alcanza 100 ms directamente por cada conteo realizado.
-                                 */
-                                 
-                                 ; Encabezado
-                                 .include "M328PDEF.inc"
-                                 
-                                 ;***** Created: 2011-02-09 12:03 ******* Source: ATmega328P.xml **********
-                                 ;*************************************************************************
-                                 ;* A P P L I C A T I O N   N O T E   F O R   T H E   A V R   F A M I L Y
-                                 ;* 
-                                 ;* Number            : AVR000
-                                 ;* File Name         : "m328Pdef.inc"
-                                 ;* Title             : Register/Bit Definitions for the ATmega328P
-                                 ;* Date              : 2011-02-09
-                                 ;* Version           : 2.35
-                                 ;* Support E-mail    : avr@atmel.com
-                                 ;* Target MCU        : ATmega328P
-                                 ;* 
-                                 ;* DESCRIPTION
-                                 ;* When including this file in the assembly program file, all I/O register 
-                                 ;* names and I/O register bit names appearing in the data book can be used.
-                                 ;* In addition, the six registers forming the three data pointers X, Y and 
-                                 ;* Z have been assigned names XL - ZH. Highest RAM address for Internal 
-                                 ;* SRAM is also defined 
-                                 ;* 
-                                 ;* The Register names are represented by their hexadecimal address.
-                                 ;* 
-                                 ;* The Register Bit names are represented by their bit number (0-7).
-                                 ;* 
-                                 ;* Please observe the difference in using the bit names with instructions
-                                 ;* such as "sbr"/"cbr" (set/clear bit in register) and "sbrs"/"sbrc"
-                                 ;* (skip if bit in register set/cleared). The following example illustrates
-                                 ;* this:
-                                 ;* 
-                                 ;* in    r16,PORTB             ;read PORTB latch
-                                 ;* sbr   r16,(1<<PB6)+(1<<PB5) ;set PB6 and PB5 (use masks, not bit#)
-                                 ;* out   PORTB,r16             ;output to PORTB
-                                 ;* 
-                                 ;* in    r16,TIFR              ;read the Timer Interrupt Flag Register
-                                 ;* sbrc  r16,TOV0              ;test the overflow flag (use bit#)
-                                 ;* rjmp  TOV0_is_set           ;jump if set
-                                 ;* ...                         ;otherwise do something else
-                                 ;*************************************************************************
-                                 
-                                 #ifndef _M328PDEF_INC_
-                                 #endif  /* _M328PDEF_INC_ */
-                                 
-                                 ; ***** END OF FILE ******************************************************
-                                 .cseg
-                                 .org    0x0000
-000000 940c 0022                 JMP     START
-                                 .org    PCI0addr
-000006 940c 007f                 JMP     ISR_PCINT0
-                                 .org	OVF0addr
-000020 940c 0088                 JMP		ISR_TIMER0
-                                 
-                                 ; Definiciones
-                                 .equ BTN_INC = PB1
-                                 .equ BTN_DEC = PB0
-                                 
-                                 // Definiciones
-                                 .equ PRESCALER = (1<<CS02) | (1<<CS00)				; Prescaler de TIMER0 (En este caso debe ser de 1024)
-                                 .equ TIMER_START = 158								; Valor inicial del Timer0 (100 ms)
-                                 
-                                 ; Variables (Estos registros NO se tocan en MAINLOOP)
-                                 .def COUNTER = R17
-                                 .def TIME_COUNTER = R18
-                                 .def SEVENSD_OUT = R19
-                                 
-                                 // Lookup Table para Display de 7 Segmentos
-                                 .equ SEVENSD0 =	0b0111_0111
-                                 .equ SEVENSD1 =	0b0100_0001
-                                 .equ SEVENSD2 =	0b0011_1011
-                                 .equ SEVENSD3 =	0b0110_1011
-                                 .equ SEVENSD4 =	0b0100_1101
-                                 .equ SEVENSD5 =	0b0110_1110
-                                 .equ SEVENSD6 =	0b0111_1110
-                                 .equ SEVENSD7 =	0b0100_0011
-                                 .equ SEVENSD8 =	0b0111_1111
-                                 .equ SEVENSD9 =	0b0100_1111
-                                 .equ SEVENSDA =	0b0101_1111
-                                 .equ SEVENSDB =	0b0111_1100
-                                 .equ SEVENSDC =	0b0011_0110
-                                 .equ SEVENSDD =	0b0111_1001
-                                 .equ SEVENSDE =	0b0011_1110
-                                 .equ SEVENSDF =	0b0001_1110 
-                                 
+                                 // Setup
                                  START:
+                                 	// Configuración de la pila
+000105 ef0f                      	LDI		R16, LOW(RAMEND)
+000106 bf0d                      	OUT		SPL, R16
+000107 e008                      	LDI		R16, HIGH(RAMEND)
+000108 bf0e                      	OUT		SPH, R16
                                  
-                                 ; Configurar la pila
-000022 ef0f                      LDI     R16, LOW(RAMEND)
-000023 bf0d                      OUT     SPL, R16
-000024 e008                      LDI     R16, HIGH(RAMEND)
-000025 bf0e                      OUT     SPH, R16
+                                 	// Cargar en Z la dirección de la tabla
+000109 e0e0                      	LDI		ZL, LOW(TABLA*2)	// Multiplicamos por dos porque usamos la FLASH
+00010a e0f2                      	LDI		ZH, HIGH(TABLA*2)
                                  
-                                 SETUP:
-                                     ; Activación de pines de entrada en el puerto B
-000026 ef0f                          LDI     R16, 0xFF            ; Habilitar pull-ups internos
-000027 b905                          OUT     PORTB, R16
+                                 	// Configurar los pines de PORTD como salidas
+00010b ef0f                      	LDI		R16, 0XFF
+00010c b90a                      	OUT		DDRD, R16
                                  
-                                     ; Activación de pines de salida en los puertos C y D
-000028 ef0f                          LDI     R16, 0xFF
-000029 b907                          OUT     DDRC, R16
-00002a b90a                      	OUT     DDRD, R16
-00002b e000                          LDI     R16, 0x00
-00002c b908                          OUT     PORTC, R16
-00002d b90b                      	OUT     PORTD, R16
-                                     
-                                     ; Configuración de Interrupciones PC en PORTB
-00002e e001                          LDI     R16, (1 << PCIE0)    ; Habilitar interrupciones pin-change en PORTB
-00002f 9300 0068                     STS     PCICR, R16
+                                 	// Configuración de reloj de sistema
+00010d e800                      	LDI		R16, (1 << CLKPCE)	// Establecer el bit para habilitar Prescalers
+00010e 9300 0061                 	STS		CLKPR, R16
+000110 e008                      	LDI		R16, 0X08			// Utilizar un prescaler de 16
+000111 9300 0061                 	STS		CLKPR, R16
                                  
-000031 e003                          LDI     R16, (1 << PCINT0) | (1 << PCINT1) ; Habilitar interrupciones en PCINT0 y PCINT1
-000032 9300 006b                     STS     PCMSK0, R16
                                  
-                                 	// Configurar Prescaler Principal
-000034 e800                      	LDI		R16, (1 << CLKPCE)
-000035 9300 0061                 	STS     CLKPR, R16          // Habilitar cambio de PRESCALER
-000037 e004                          LDI     R16, 0x04			// CAMBIAR A 0X04
-000038 9300 0061                     STS     CLKPR, R16          // Configurar Prescaler a 1 Mhz
+                                 	// Inicializar contador
+000113 2711                      	CLR		COUNTER
                                  
-00003a 940e 0042                 	CALL	INIT_TMR0
                                  
-00003c 9478                          SEI     ; Habilitar Interrupciones    
-                                 
-                                 // ---------------------------
-                                 // Rutinas no de interrupción
-                                 // ---------------------------
                                  MAINLOOP:
-00003d b918                          OUT     PORTC, COUNTER
-00003e 940e 004a                 	CALL	SEVEN_SEGMENT_DISPLAY
-000040 b93b                      	OUT     PORTD, SEVENSD_OUT
-000041 cffb                          RJMP    MAINLOOP
+                                 	// Sacar en PORTD la dirección en Z e incrementar
+000114 9125                      	LPM		OUT_PORTD, Z+
+000115 b92b                      	OUT		PORTD, OUT_PORTD
                                  
-                                 // Inicializar Timer0
-                                 INIT_TMR0:
-000042 e005                          LDI     R16, PRESCALER				// Configurar un registro para setear las posiciones de CS01 y CS00
-000043 bd05                          OUT     TCCR0B, R16					// Setear prescaler del TIMER0 a 64 (CS01 = 1 y CS00 = 0)
-000044 e90e                          LDI     R16, TIMER_START			// Empezar el conteo con un valor de 100
-000045 bd06                          OUT     TCNT0, R16					// Cargar valor inicial en TCNT0
+                                 	// Incrementar el contador
+000116 9513                      	INC		COUNTER
+000117 301a                      	CPI		COUNTER, 10		// Si el contador es menor a 10 regresar a MAINLOOP
+000118 f7d9                      	BRNE	MAINLOOP
                                  
-000046 e001                          LDI     R16, (1 << TOIE0) ; Habilitar interrupciones en PCINT0 y PCINT1
-000047 9300 006e                     STS     TIMSK0, R16
-                                 	
-000049 9508                      	RET
+                                 	// Reiniciar puntero y contador
+000119 e0e0                      	LDI		ZL, LOW(TABLA * 2)
+00011a e0f2                      	LDI		ZH, HIGH(TABLA * 2)
+00011b e010                      	LDI		COUNTER, 0
                                  
-                                 // Display de 7 segmentos
-                                 /*
-                                 En esta parte revisamos el valor del contador del puerto haciendo un compare con el valor que se va a mostrar en 
-                                 el display de 7 segmentos. Si el compare activa la bandera Z el programa regresará a MAINLOOP
-                                 */
-                                 SEVEN_SEGMENT_DISPLAY:
-00004a 2733                      	CLR		SEVENSD_OUT	
-                                 	
-                                 	// Revisar si el contador es 0	
-00004b e737                      	LDI		SEVENSD_OUT, SEVENSD0
-00004c 3020                      	CPI		TIME_COUNTER, 0
-00004d f171                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 1	
-00004e e431                      	LDI		SEVENSD_OUT, SEVENSD1
-00004f 3021                      	CPI		TIME_COUNTER, 1
-000050 f159                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 2	
-000051 e33b                      	LDI		SEVENSD_OUT, SEVENSD2
-000052 3022                      	CPI		TIME_COUNTER, 2
-000053 f141                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 3	
-000054 e63b                      	LDI		SEVENSD_OUT, SEVENSD3
-000055 3023                      	CPI		TIME_COUNTER, 3
-000056 f129                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 4
-000057 e43d                      	LDI		SEVENSD_OUT, SEVENSD4
-000058 3024                      	CPI		TIME_COUNTER, 4
-000059 f111                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 5	
-00005a e63e                      	LDI		SEVENSD_OUT, SEVENSD5
-00005b 3025                      	CPI		TIME_COUNTER, 5
-00005c f0f9                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 6	
-00005d e73e                      	LDI		SEVENSD_OUT, SEVENSD6
-00005e 3026                      	CPI		TIME_COUNTER, 6
-00005f f0e1                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 0	
-000060 e433                      	LDI		SEVENSD_OUT, SEVENSD7
-000061 3027                      	CPI		TIME_COUNTER, 7
-000062 f0c9                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 8	
-000063 e73f                      	LDI		SEVENSD_OUT, SEVENSD8
-000064 3028                      	CPI		TIME_COUNTER, 8
-000065 f0b1                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 9	
-000066 e43f                      	LDI		SEVENSD_OUT, SEVENSD9
-000067 3029                      	CPI		TIME_COUNTER, 9
-000068 f099                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es A	
-000069 e53f                      	LDI		SEVENSD_OUT, SEVENSDA
-00006a 302a                      	CPI		TIME_COUNTER, 10
-00006b f081                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es B	
-00006c e73c                      	LDI		SEVENSD_OUT, SEVENSDB
-00006d 302b                      	CPI		TIME_COUNTER, 11
-00006e f069                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 12	
-00006f e336                      	LDI		SEVENSD_OUT, SEVENSDC
-000070 302c                      	CPI		TIME_COUNTER, 12
-000071 f051                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 13	
-000072 e739                      	LDI		SEVENSD_OUT, SEVENSDD
-000073 302d                      	CPI		TIME_COUNTER, 13
-000074 f039                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 14	
-000075 e33e                      	LDI		SEVENSD_OUT, SEVENSDE
-000076 302e                      	CPI		TIME_COUNTER, 14
-000077 f021                      	BREQ	END
-                                 
-                                 	// Revisar si el contador es 15	
-000078 e13e                      	LDI		SEVENSD_OUT, SEVENSDF
-000079 302f                      	CPI		TIME_COUNTER, 15
-00007a f009                      	BREQ	END
-                                 
-00007b 9508                      	RET
-                                 
-                                 
-                                 END:
-00007c 9508                      	RET
-                                 
-                                 UPDATE_SSD:
-00007d 940e 004a                 	CALL	SEVEN_SEGMENT_DISPLAY
-                                 // ---------------------------
-                                 // Rutinas de interrupción
-                                 // ---------------------------
-                                 ; Rutina de Interrupción PCINT0
-                                 ISR_PCINT0:
-00007f 930f                          PUSH    R16              ; Guardar el contenido de R16 en la pila
-000080 b103                          IN      R16, PINB        ; Leer el estado del puerto B
-                                 
-000081 ff01                          SBRS    R16, BTN_INC     ; Si PB1 está en LOW, incrementar
-000082 9513                          INC		COUNTER
-                                 
-000083 ff00                          SBRS    R16, BTN_DEC     ; Si PB0 está en LOW, decrementar
-000084 951a                          DEC		COUNTER
-                                 
-000085 701f                      	ANDI	COUNTER, 0X0F
-000086 940e 0092                 	CALL	ISR_END
-                                 
-                                 ; Rutina de Interrupción TIMER0
-                                 ISR_TIMER0:
-000088 b70f                          IN		R16, SREG
-000089 930f                      	PUSH    R16              ; Guardar el contenido de R16 en la pila
-00008a b103                          IN      R16, PINB        ; Leer el estado del puerto B
-                                 
-00008b ff01                          SBRS    R16, BTN_INC     ; Si PB1 está en LOW, incrementar
-00008c 9523                          INC     TIME_COUNTER
-                                 
-00008d ff00                          SBRS    R16, BTN_DEC     ; Si PB0 está en LOW, decrementar
-00008e 952a                          DEC		TIME_COUNTER
-                                 
-00008f 702f                      	ANDI	TIME_COUNTER, 0X0F
-000090 940e 0092                 	CALL	ISR_END
-                                 
-                                 ISR_END:
-000092 910f                          POP     R16              ; Recuperar R16 antes de salir
-000093 bf0f                          OUT		SREG, R16
-000094 9518                      	RETI                     ; Salir de la interrupción
-                                 
+00011c cff7                      	RJMP	MAINLOOP
                                  
 
 
@@ -1307,39 +1074,39 @@ counted separately from r26..r31 here.
 .dseg memory usage only counts static data declared with .byte
 
 "ATmega328P" register use summary:
-x  :   0 y  :   0 z  :   0 r0 :   0 r1 :   0 r2 :   0 r3 :   0 r4 :   0 
+x  :   0 y  :   0 z  :   1 r0 :   0 r1 :   0 r2 :   0 r3 :   0 r4 :   0 
 r5 :   0 r6 :   0 r7 :   0 r8 :   0 r9 :   0 r10:   0 r11:   0 r12:   0 
-r13:   0 r14:   0 r15:   0 r16:  37 r17:   4 r18:  19 r19:  18 r20:   0 
+r13:   0 r14:   0 r15:   0 r16:  10 r17:   4 r18:   2 r19:   0 r20:   0 
 r21:   0 r22:   0 r23:   0 r24:   0 r25:   0 r26:   0 r27:   0 r28:   0 
-r29:   0 r30:   0 r31:   0 
-Registers used: 4 out of 35 (11.4%)
+r29:   0 r30:   2 r31:   2 
+Registers used: 6 out of 35 (17.1%)
 
 "ATmega328P" instruction use summary:
 .lds  :   0 .sts  :   0 adc   :   0 add   :   0 adiw  :   0 and   :   0 
-andi  :   2 asr   :   0 bclr  :   0 bld   :   0 brbc  :   0 brbs  :   0 
-brcc  :   0 brcs  :   0 break :   0 breq  :  16 brge  :   0 brhc  :   0 
+andi  :   0 asr   :   0 bclr  :   0 bld   :   0 brbc  :   0 brbs  :   0 
+brcc  :   0 brcs  :   0 break :   0 breq  :   0 brge  :   0 brhc  :   0 
 brhs  :   0 brid  :   0 brie  :   0 brlo  :   0 brlt  :   0 brmi  :   0 
-brne  :   0 brpl  :   0 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 
-brvs  :   0 bset  :   0 bst   :   0 call  :   5 cbi   :   0 cbr   :   0 
+brne  :   1 brpl  :   0 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 
+brvs  :   0 bset  :   0 bst   :   0 call  :   0 cbi   :   0 cbr   :   0 
 clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :   1 cls   :   0 
 clt   :   0 clv   :   0 clz   :   0 com   :   0 cp    :   0 cpc   :   0 
-cpi   :  16 cpse  :   0 dec   :   2 eor   :   0 fmul  :   0 fmuls :   0 
-fmulsu:   0 icall :   0 ijmp  :   0 in    :   3 inc   :   2 jmp   :   3 
-ld    :   0 ldd   :   0 ldi   :  28 lds   :   0 lpm   :   0 lsl   :   0 
+cpi   :   1 cpse  :   0 dec   :   0 eor   :   0 fmul  :   0 fmuls :   0 
+fmulsu:   0 icall :   0 ijmp  :   0 in    :   0 inc   :   1 jmp   :   0 
+ld    :   0 ldd   :   0 ldi   :  10 lds   :   0 lpm   :   1 lsl   :   0 
 lsr   :   0 mov   :   0 movw  :   0 mul   :   0 muls  :   0 mulsu :   0 
-neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :  12 pop   :   1 
-push  :   2 rcall :   0 ret   :   3 reti  :   1 rjmp  :   1 rol   :   0 
+neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :   4 pop   :   0 
+push  :   0 rcall :   0 ret   :   0 reti  :   0 rjmp  :   2 rol   :   0 
 ror   :   0 sbc   :   0 sbci  :   0 sbi   :   0 sbic  :   0 sbis  :   0 
-sbiw  :   0 sbr   :   0 sbrc  :   0 sbrs  :   4 sec   :   0 seh   :   0 
-sei   :   1 sen   :   0 ser   :   0 ses   :   0 set   :   0 sev   :   0 
-sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :   5 
+sbiw  :   0 sbr   :   0 sbrc  :   0 sbrs  :   0 sec   :   0 seh   :   0 
+sei   :   0 sen   :   0 ser   :   0 ses   :   0 set   :   0 sev   :   0 
+sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :   2 
 sub   :   0 subi  :   0 swap  :   0 tst   :   0 wdr   :   0 
-Instructions used: 19 out of 113 (16.8%)
+Instructions used: 9 out of 113 (8.0%)
 
 "ATmega328P" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x00012a    242      0    242   32768   0.7%
+[.cseg] 0x000000 0x00023a     50     10     60   32768   0.2%
 [.dseg] 0x000100 0x000100      0      0      0    2048   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 
