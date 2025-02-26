@@ -27,9 +27,10 @@
 // | DEFINICIONES DE REGISTROS DE USO COMÚN Y CONSTANTES DE ASSEMBLER |
 // --------------------------------------------------------------------
 
-// Definiciones ()
-.equ PRESCALER = (1<<CS02) | (1<<CS00)				; Prescaler de TIMER0 (En este caso debe ser de 1024)
-.equ TIMER_START = 158								; Valor inicial del Timer0 (para un delay de 100 ms)
+// Constantes
+.equ	PRESCALER = (1<<CS02) | (1<<CS00)	; Prescaler de TIMER0 (En este caso debe ser de 1024)
+.equ	TIMER_START = 178					; Valor inicial del Timer0 (para un delay de 5 ms)
+.equ	OVF_TOP	= 200						; Número de overflows de TIMER0 en un segundo
 
 // Registros
 .def	BTN_COUNTER = R17	; Contador de botones
@@ -37,6 +38,7 @@
 .def	SCOUNTER2 = R19		; Contador de decenas de segundos
 .def	OUT_PORTC = R20		; Salida a PORTC
 .def	OUT_PORTD = R21		; Salida a PORTD
+.def	OVF_COUNTER = R22	; Contador de Overflows en Timer0
 
 // --------------------------------------------------------------------
 // | TABLAS															  |
@@ -75,17 +77,14 @@ START:
 
 	// Configurar los pines de PORTC como salidas
 	LDI		R16, 0XFF
-	OUT		DDRD, R16
+	OUT		DDRC, R16
 	
 	// Configurar los pines de PORTD como salidas
 	LDI		R16, 0XFF
 	OUT		DDRD, R16
 
 	// - CONFIGURACIÓN DEL RELOJ DE SISTEMA -
-	LDI		R16, (1 << CLKPCE)	// Establecer el bit para habilitar Prescalers
-	STS		CLKPR, R16
-	LDI		R16, 0X08			// Utilizar un prescaler de 16
-	STS		CLKPR, R16
+	// No es necesaria, usaremos los 16 MHz
 
 	// - HABILITACIÓN DE INTERRUPCIONES PC -
 	LDI		R16, (1 << PCIE0)
@@ -111,14 +110,13 @@ START:
 	CLR		BTN_COUNTER
 	CLR		SCOUNTER1
 	CLR		SCOUNTER2
+	CLR		OVF_COUNTER
 
 // --------------------------------------------------------------------
 // | MAINLOOP														  |
 // --------------------------------------------------------------------
 
 MAINLOOP:
-	CALL	UPDATE_DISPLAY1
-	CALL	UPDATE_DISPLAY2
 	RJMP	MAINLOOP
 
 // --------------------------------------------------------------------
@@ -140,10 +138,6 @@ UPDATE_DISPLAY1:
     LPM		OUT_PORTD, Z
 	OUT		PORTD, OUT_PORTD
 
-	; Activar display 1 y desactivar display 2
-	SBI		PORTB, PB2
-	CBI		PORTB, PB3
-
 	RET
 
 // Actualizar display 2 (Unidades)
@@ -160,10 +154,6 @@ UPDATE_DISPLAY2:
     ; Extraer el valor de la dirección a la que Z está apuntando
     LPM		OUT_PORTD, Z
 	OUT		PORTD, OUT_PORTD
-
-	; Activar display 2 y desactivar display 1
-	CBI		PORTB, PB2
-	SBI		PORTB, PB3
 
 	RET
 
@@ -195,34 +185,54 @@ PCINT_ISR:
 // --------------------------------------------------------------------
 // Cuando ocurre un overflow en TIMER0 solo se incrementarán los contadores
 TIMER0_ISR: 
-	PUSH	R16  ; Guardar registro random
-	IN      R16, SREG   ; Guardar el estado de los flags
-	PUSH	R16  ; Guardar registro random
-	
-	// Incrementar contador 1
+    PUSH	R16
+    IN		R16, SREG
+    PUSH	R16
+
+	// Reiniciar el TIMER0
+	LDI		R16, TIMER_START
+    OUT		TCNT0, R16
+
+	// Incrementar el contador de Overflows hasta alcanzar 1 segundo y luego reiniciar
+	INC		OVF_COUNTER
+	CPI		OVF_COUNTER, OVF_TOP
+	BRLO	SHOW_NUMBERS
+	LDI		OVF_COUNTER, 0
+
+	// Incrementar contador de segundos (unidades)
 	INC		SCOUNTER1
-	CPI		SCOUNTER1, 10
-	BRLO	END_ISR			; Si el contador de unidades no supera 10, no hacer nada más
+    CPI		SCOUNTER1, 10
+    BRLO	SHOW_NUMBERS 
 
-	// Si SCOUNTER1 >= 10 reiniciar contador e incrementar contador de decenas
-	LDI		SCOUNTER1, 0
-	INC		SCOUNTER2
+	// Incrementar contador de decenas de segundos
+    LDI		SCOUNTER1, 0
+    INC		SCOUNTER2
 
-	// Si el contador de decenas supera a 10, reiniciar su valor
-	CPI		SCOUNTER2, 10
-	BRLO	END_ISR			; Si el contador de unidades no supera 10, no hacer nada más
+	// Si el contador de decenas es mayor o igual a 6 reiniciar y mostrar números
+    CPI		SCOUNTER2, 6
+    BRLO	SHOW_NUMBERS
 	LDI		SCOUNTER2, 0
-	
-	POP		R16
-    OUT		SREG, R16
-	POP		R16  ; Sacar registro random
-	RETI
+	RJMP	SHOW_NUMBERS
 
+// Mostrar los números en los displays
+SHOW_NUMBERS:
+    SBIS	PORTB, PB2  ; Si PB2 está apagado, encenderlo y apagar PB3
+    RJMP	ACTIVATE_DISPLAY1
+    RJMP	ACTIVATE_DISPLAY2
 
+ACTIVATE_DISPLAY1:
+    SBI		PORTB, PB2   ; Activar display 1
+    CBI		PORTB, PB3   ; Desactivar display 2
+    CALL	UPDATE_DISPLAY1
+    RJMP	END_ISR
+
+ACTIVATE_DISPLAY2:
+    CBI		PORTB, PB2   ; Desactivar display 1
+    SBI		PORTB, PB3   ; Activar display 2
+    CALL	UPDATE_DISPLAY2
 
 END_ISR:
-	POP		R16
+    POP		R16
     OUT		SREG, R16
-	POP		R16  ; Sacar registro random
-	RETI
-	
+    POP		R16
+    RETI
