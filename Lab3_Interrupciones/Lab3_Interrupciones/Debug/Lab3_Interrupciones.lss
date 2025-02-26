@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Tue Feb 25 14:10:41 2025
+AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm Wed Feb 26 10:26:18 2025
 
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m328Pdef.inc'
@@ -991,22 +991,42 @@ AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab
                                  ; Author : Mario Alejandro Betancourt Franco
                                  ;
                                  
-                                 ; NOTA: Voy a tirar todo el progreso previo y empezaré el código desde cero.
-                                 ;       Quiero entender qué estoy haciendo
+                                 ; NOTA: De aquí en adelante trabajaré la entrega del POSTLAB
                                  
-                                 // - DIRECTIVAS DEL ENSAMBLADOR -
-                                 // Iniciar el código
+                                 // --------------------------------------------------------------------
+                                 // | DIRECTIVAS DEL ENSAMBLADOR                                       |
+                                 // --------------------------------------------------------------------
+                                 ; Iniciar el código
                                  .cseg		
-                                 .org	0x000
+                                 .org	0x0000
 000000 c104                      	RJMP	START
                                  
-                                 // Interrupciones PIN CHANGE
+                                 ; Interrupciones PIN CHANGE
                                  .org PCI0addr
-000006 c119                      	RJMP PCINT_ISR		; Vector de interrupción de Pin Change
+000006 c124                      	RJMP PCINT_ISR		; Vector de interrupción de Pin Change
+                                 
+                                 ; Interrupciones por overflow de TIMER0 (Modo Normal)
+                                 .org OVF0addr           ; Vector de interrupción para TIMER0_OVF
+000020 c116                          RJMP TIMER0_ISR        ; Saltar a la rutina de interrupción
+                                 
+                                 // --------------------------------------------------------------------
+                                 // | DEFINICIONES DE REGISTROS DE USO COMÚN Y CONSTANTES DE ASSEMBLER |
+                                 // --------------------------------------------------------------------
+                                 
+                                 // Definiciones ()
+                                 .equ PRESCALER = (1<<CS02) | (1<<CS00)				; Prescaler de TIMER0 (En este caso debe ser de 1024)
+                                 .equ TIMER_START = 158								; Valor inicial del Timer0 (para un delay de 100 ms)
                                  
                                  // Registros
-                                 .def	COUNTER = R17
-                                 .def	OUT_PORTD = R18
+                                 .def	BTN_COUNTER = R17	; Contador de botones
+                                 .def	SCOUNTER1 = R18		; Contador de segundos
+                                 .def	SCOUNTER2 = R19		; Contador de decenas de segundos
+                                 .def	OUT_PORTC = R20		; Salida a PORTC
+                                 .def	OUT_PORTD = R21		; Salida a PORTD
+                                 
+                                 // --------------------------------------------------------------------
+                                 // | TABLAS															  |
+                                 // --------------------------------------------------------------------
                                  
                                  // Definir la tabla en la memoria FLASH (Números del 1 al 10 en display de 7 segmentos)
                                  .org	0x100
@@ -1017,105 +1037,182 @@ AVRASM ver. 2.2.8  C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab
 000103 23ee
 000104 2fef                          .db 0xE7, 0x21, 0xCB, 0x6B, 0x2D, 0x6E, 0xEE, 0x23, 0xEF, 0x2F
                                  
-                                 // Setup
+                                 // --------------------------------------------------------------------
+                                 // | SETUP															  |
+                                 // --------------------------------------------------------------------
+                                 
                                  START:
-                                 	// Configuración de la pila
+                                 	// - CONFIGURACIÓN DE LA PILA - 
 000105 ef0f                      	LDI		R16, LOW(RAMEND)
 000106 bf0d                      	OUT		SPL, R16
 000107 e008                      	LDI		R16, HIGH(RAMEND)
 000108 bf0e                      	OUT		SPH, R16
                                  
-                                 	// Inicializar contador
-000109 2711                      	CLR		COUNTER
-                                 
-                                 	// Cargar en Z la dirección de la tabla
-00010a e0e0                      	LDI		ZL, LOW(TABLA * 2)
-00010b e0f2                      	LDI		ZH, HIGH(TABLA * 2)
-00010c 9124                      	LPM		OUT_PORTD, Z
-00010d b92b                      	OUT		PORTD, OUT_PORTD
-                                 
+                                 	// - INICIALIZACIÓN DE TABLA -
+000109 e0e0                      	LDI		ZL, LOW(TABLA * 2)
+00010a e0f2                      	LDI		ZH, HIGH(TABLA * 2)
+00010b 9154                      	LPM		OUT_PORTD, Z
+00010c b95b                      	OUT		PORTD, OUT_PORTD
+                                 	
+                                 	// - CONFIGURACIÓN DE PINES -
                                  	// Configurar los pines de PORTB como entradas
-00010e e003                      	LDI		R16, (1 << PB0) | (1 << PB1)
-00010f b905                      	OUT		PORTB, R16
+00010d e003                      	LDI		R16, (1 << PB0) | (1 << PB1)
+00010e b905                      	OUT		PORTB, R16
                                  
+                                 	// Configurar los pines de PORTC como salidas
+00010f ef0f                      	LDI		R16, 0XFF
+000110 b90a                      	OUT		DDRD, R16
+                                 	
                                  	// Configurar los pines de PORTD como salidas
-000110 ef0f                      	LDI		R16, 0XFF
-000111 b90a                      	OUT		DDRD, R16
+000111 ef0f                      	LDI		R16, 0XFF
+000112 b90a                      	OUT		DDRD, R16
                                  
-                                 	// Configuración de reloj de sistema
-000112 e800                      	LDI		R16, (1 << CLKPCE)	// Establecer el bit para habilitar Prescalers
-000113 9300 0061                 	STS		CLKPR, R16
-000115 e008                      	LDI		R16, 0X08			// Utilizar un prescaler de 16
-000116 9300 0061                 	STS		CLKPR, R16
+                                 	// - CONFIGURACIÓN DEL RELOJ DE SISTEMA -
+000113 e800                      	LDI		R16, (1 << CLKPCE)	// Establecer el bit para habilitar Prescalers
+000114 9300 0061                 	STS		CLKPR, R16
+000116 e008                      	LDI		R16, 0X08			// Utilizar un prescaler de 16
+000117 9300 0061                 	STS		CLKPR, R16
                                  
-                                 	; Habilitar interrupciones de cambio de pin en PCINT0 y PCINT1
-000118 e001                      	LDI		R16, (1 << PCIE0)
-000119 9300 0068                 	STS		PCICR, R16
-00011b e003                      	LDI		R16, (1 << PCINT0) | (1 << PCINT1)
-00011c 9300 006b                 	STS		PCMSK0, R16
+                                 	// - HABILITACIÓN DE INTERRUPCIONES PC -
+000119 e001                      	LDI		R16, (1 << PCIE0)
+00011a 9300 0068                 	STS		PCICR, R16
+00011c e003                      	LDI		R16, (1 << PCINT0) | (1 << PCINT1)
+00011d 9300 006b                 	STS		PCMSK0, R16
+                                 	
+                                 	// - INICIALIZACIÓN DE TIMER0 -
+                                 	// No cambiamos los bits WGM dado que la configuración por default es el modo normal
+00011f e005                      	LDI     R16, PRESCALER				// Configurar un registro para setear las posiciones de CS01 y CS00
+000120 bd05                          OUT     TCCR0B, R16					// Setear prescaler del TIMER0 a 64 (CS01 = 1 y CS00 = 0)
+000121 e90e                          LDI     R16, TIMER_START			// Empezar el conteo con un valor de 158
+000122 bd06                          OUT     TCNT0, R16					// Cargar valor inicial en TCNT0
                                  
-                                 	; Habilitar interrupciones globales
-00011e 9478                      	SEI
+                                 	// - HABILITACIÓN DE INTERRUPCIONES POR OVERFLOW EN TIMER0 -
+000123 e001                      	LDI		R16, (1 << TOIE0)
+000124 9300 006e                 	STS		TIMSK0, R16
                                  
+                                 	// - HABILITACIÓN DE INTERRUPCIONES GLOBALES -
+000126 9478                      	SEI
+                                 
+                                 	// - INICIALIZACIÓN DE REGISTROS DE PROPÓSITO GENERAL -
+000127 2711                      	CLR		BTN_COUNTER
+000128 2722                      	CLR		SCOUNTER1
+000129 2733                      	CLR		SCOUNTER2
+                                 
+                                 // --------------------------------------------------------------------
+                                 // | MAINLOOP														  |
+                                 // --------------------------------------------------------------------
                                  
                                  MAINLOOP:
-00011f cfff                      	RJMP	MAINLOOP
+00012a cfff                      	RJMP	MAINLOOP
                                  
-                                 // RUTINAS DE INTERRUPCIÓN -----------------------------------------------------
                                  
+                                 
+                                 // --------------------------------------------------------------------
+                                 // | RUTINAS DE INTERRUPCIÓN POR CAMBIO EN PINES					  |															  |
+                                 // --------------------------------------------------------------------
                                  PCINT_ISR:
-000120 930f                      	PUSH	R16  ; Guardar registro random
-000121 b70f                      	IN      R16, SREG   ; Guardar el estado de los flags
-000122 930f                      	PUSH	R16  ; Guardar registro random
+00012b 930f                      	PUSH	R16  ; Guardar registro random
+00012c b70f                      	IN      R16, SREG   ; Guardar el estado de los flags
+00012d 930f                      	PUSH	R16  ; Guardar registro random
                                  
                                  	// Si PB0 está presionado, incrementar
-000123 9918                      	SBIC	PINB, PB0
-000124 c006                      	RJMP	INCREMENT
+00012e 9918                      	SBIC	PINB, PB0
+00012f 9513                      	INC		BTN_COUNTER
                                  
                                  	// Si PB0 está presionado, decrementar
-000125 9919                      	SBIC	PINB, PB1
-000126 c009                      	RJMP	DECREMENT
+000130 9919                      	SBIC	PINB, PB1
+000131 951a                      	DEC		BTN_COUNTER
                                  
-000127 910f                      	POP R16
-000128 bf0f                          OUT SREG, R16
-000129 910f                      	POP		R16  ; Sacar registro random
-00012a 9518                      	RETI
+000132 b918                      	OUT		PORTC, BTN_COUNTER
                                  
+000133 910f                      	POP		R16
+000134 bf0f                          OUT		SREG, R16
+000135 910f                      	POP		R16  ; Sacar registro random
+000136 9518                      	RETI
+                                 
+                                 // --------------------------------------------------------------------
+                                 // | RUTINAS DE INTERRUPCIÓN CON TIMER0								  |
+                                 // --------------------------------------------------------------------
+                                 TIMER0_ISR: 
+000137 930f                      	PUSH	R16  ; Guardar registro random
+000138 b70f                      	IN      R16, SREG   ; Guardar el estado de los flags
+000139 930f                      	PUSH	R16  ; Guardar registro random
+00013a c000                      	RJMP	INCREMENT1
+                                 
+                                 	/*
+                                 	POP		R16
+                                     OUT		SREG, R16
+                                 	POP		R16  ; Sacar registro random
+                                 	RETI
+                                 	*/
+                                 	
+                                 
+                                 // Incrementar el contador de segundos 1 hasta máximo 10 y reiniciar
+                                 INCREMENT1:
+00013b 9523                      	INC		SCOUNTER1
+00013c 302a                      	CPI		SCOUNTER1, 10
+00013d f010                      	BRLO	UPDATE_DISPLAY1
+00013e e020                      	LDI		SCOUNTER1, 0
+00013f c000                      	RJMP	UPDATE_DISPLAY1
+                                 
+                                 // Actualizar display 1
+                                 UPDATE_DISPLAY1:
+000140 e0e0                      	LDI		ZL, LOW(TABLA * 2)
+000141 e0f2                      	LDI		ZH, HIGH(TABLA * 2)
+                                 	
+                                 	; Sumar el contador de segundos 1 a Z
+000142 2f02                          MOV		R16, SCOUNTER1
+000143 0fe0                          ADD		ZL, R16
+000144 2411                          CLR		R1				; Asegurar que no haya residuos en R1
+000145 1df1                          ADC		ZH, R1			; Sumar acarreo a ZH
+                                 
+                                     ; Extraer el valor de la dirección a la que Z está apuntando
+000146 9154                          LPM		OUT_PORTD, Z
+000147 b95b                      	OUT		PORTD, OUT_PORTD
+                                 
+000148 910f                      	POP		R16
+000149 bf0f                          OUT		SREG, R16
+00014a 910f                      	POP		R16  ; Sacar registro random
+00014b 9518                      	RETI
+                                 
+                                 /*
                                  // Incrementar el contador hasta máximo 10 y reiniciar
                                  INCREMENT:
-00012b 9513                      	INC		COUNTER
-00012c 301a                      	CPI		COUNTER, 10
-00012d f030                      	BRLO	UPDATE_DISPLAY
-00012e e010                      	LDI		COUNTER, 0
-00012f c004                      	RJMP	UPDATE_DISPLAY
+                                 	INC		BTN_COUNTER
+                                 	CPI		BTN_COUNTER, 10
+                                 	BRLO	UPDATE_DISPLAY
+                                 	LDI		BTN_COUNTER, 0
+                                 	RJMP	UPDATE_DISPLAY
                                  
                                  
                                  // Incrementar el contador hasta mínimo 0 y reiniciar a 9
+                                 
                                  DECREMENT:
-000130 951a                      	DEC		COUNTER
-000131 f412                      	BRPL	UPDATE_DISPLAY
-000132 e019                      	LDI		COUNTER, 9
-000133 c000                      	RJMP	UPDATE_DISPLAY
+                                 	DEC		BTN_COUNTER
+                                 	BRPL	UPDATE_DISPLAY
+                                 	LDI		BTN_COUNTER, 9
+                                 	RJMP	UPDATE_DISPLAY
+                                 
                                  
                                  UPDATE_DISPLAY:
-000134 e0e0                      	LDI		ZL, LOW(TABLA * 2)
-000135 e0f2                      	LDI		ZH, HIGH(TABLA * 2)
+                                 	LDI		ZL, LOW(TABLA * 2)
+                                 	LDI		ZH, HIGH(TABLA * 2)
                                  	
                                  	
-                                 	; Multiplicar COUNTER por 2 y sumarlo a Z
-000136 2f01                          MOV		R16, COUNTER
-000137 0fe0                          ADD		ZL, R16
-000138 2411                          CLR		R1				; Asegurar que no haya residuos en R1
-000139 1df1                          ADC		ZH, R1			; Sumar acarreo a ZH
+                                 	; Multiplicar BTN_COUNTER por 2 y sumarlo a Z
+                                     MOV		R16, BTN_COUNTER
+                                     ADD		ZL, R16
+                                     CLR		R1				; Asegurar que no haya residuos en R1
+                                     ADC		ZH, R1			; Sumar acarreo a ZH
                                  
                                      ; Extraer el valor de la dirección a la que Z está apuntando
-00013a 9124                          LPM		OUT_PORTD, Z
-00013b b92b                      	OUT		PORTD, OUT_PORTD
+                                     LPM		OUT_PORTD, Z
+                                 	OUT		PORTD, OUT_PORTD
                                  
-00013c 910f                      	POP		R16
-00013d bf0f                          OUT		SREG, R16
-00013e 910f                      	POP		R16  ; Sacar registro random
-00013f 9518                      	RETI
+                                 	POP		R16
+                                     OUT		SREG, R16
+                                 	POP		R16  ; Sacar registro random
+                                 	RETI
                                  
 
 
@@ -1136,37 +1233,37 @@ counted separately from r26..r31 here.
 "ATmega328P" register use summary:
 x  :   0 y  :   0 z  :   2 r0 :   0 r1 :   2 r2 :   0 r3 :   0 r4 :   0 
 r5 :   0 r6 :   0 r7 :   0 r8 :   0 r9 :   0 r10:   0 r11:   0 r12:   0 
-r13:   0 r14:   0 r15:   0 r16:  27 r17:   7 r18:   4 r19:   0 r20:   0 
-r21:   0 r22:   0 r23:   0 r24:   0 r25:   0 r26:   0 r27:   0 r28:   0 
+r13:   0 r14:   0 r15:   0 r16:  38 r17:   4 r18:   5 r19:   1 r20:   0 
+r21:   4 r22:   0 r23:   0 r24:   0 r25:   0 r26:   0 r27:   0 r28:   0 
 r29:   0 r30:   3 r31:   3 
-Registers used: 7 out of 35 (20.0%)
+Registers used: 9 out of 35 (25.7%)
 
 "ATmega328P" instruction use summary:
 .lds  :   0 .sts  :   0 adc   :   1 add   :   1 adiw  :   0 and   :   0 
 andi  :   0 asr   :   0 bclr  :   0 bld   :   0 brbc  :   0 brbs  :   0 
 brcc  :   0 brcs  :   0 break :   0 breq  :   0 brge  :   0 brhc  :   0 
 brhs  :   0 brid  :   0 brie  :   0 brlo  :   1 brlt  :   0 brmi  :   0 
-brne  :   0 brpl  :   1 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 
+brne  :   0 brpl  :   0 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 
 brvs  :   0 bset  :   0 bst   :   0 call  :   0 cbi   :   0 cbr   :   0 
-clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :   2 cls   :   0 
+clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :   4 cls   :   0 
 clt   :   0 clv   :   0 clz   :   0 com   :   0 cp    :   0 cpc   :   0 
 cpi   :   1 cpse  :   0 dec   :   1 eor   :   0 fmul  :   0 fmuls :   0 
-fmulsu:   0 icall :   0 ijmp  :   0 in    :   1 inc   :   1 jmp   :   0 
-ld    :   0 ldd   :   0 ldi   :  14 lds   :   0 lpm   :   4 lsl   :   0 
+fmulsu:   0 icall :   0 ijmp  :   0 in    :   2 inc   :   2 jmp   :   0 
+ld    :   0 ldd   :   0 ldi   :  17 lds   :   0 lpm   :   4 lsl   :   0 
 lsr   :   0 mov   :   1 movw  :   0 mul   :   0 muls  :   0 mulsu :   0 
-neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :   8 pop   :   4 
-push  :   2 rcall :   0 ret   :   0 reti  :   2 rjmp  :   7 rol   :   0 
+neg   :   0 nop   :   0 or    :   0 ori   :   0 out   :  12 pop   :   4 
+push  :   4 rcall :   0 ret   :   0 reti  :   2 rjmp  :   6 rol   :   0 
 ror   :   0 sbc   :   0 sbci  :   0 sbi   :   0 sbic  :   2 sbis  :   0 
 sbiw  :   0 sbr   :   0 sbrc  :   0 sbrs  :   0 sec   :   0 seh   :   0 
 sei   :   1 sen   :   0 ser   :   0 ses   :   0 set   :   0 sev   :   0 
-sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :   4 
+sez   :   0 sleep :   0 spm   :   0 st    :   0 std   :   0 sts   :   5 
 sub   :   0 subi  :   0 swap  :   0 tst   :   0 wdr   :   0 
-Instructions used: 20 out of 113 (17.7%)
+Instructions used: 19 out of 113 (16.8%)
 
 "ATmega328P" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x000280    122     10    132   32768   0.4%
+[.cseg] 0x000000 0x000298    148     10    158   32768   0.5%
 [.dseg] 0x000100 0x000100      0      0      0    2048   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 
