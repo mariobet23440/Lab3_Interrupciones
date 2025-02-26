@@ -65,9 +65,13 @@ START:
 	OUT		PORTD, OUT_PORTD
 	
 	// - CONFIGURACIÓN DE PINES -
-	// Configurar los pines de PORTB como entradas
+	// Configurar los pines 0 y 1 de PORTB como entradas
 	LDI		R16, (1 << PB0) | (1 << PB1)
 	OUT		PORTB, R16
+
+	// Configurar los pines 2 y 3 de PORTB como salidas
+	LDI		R16, (1 << PB2) | (1 << PB3)
+	OUT		DDRB, R16
 
 	// Configurar los pines de PORTC como salidas
 	LDI		R16, 0XFF
@@ -113,9 +117,55 @@ START:
 // --------------------------------------------------------------------
 
 MAINLOOP:
+	CALL	UPDATE_DISPLAY1
+	CALL	UPDATE_DISPLAY2
 	RJMP	MAINLOOP
 
+// --------------------------------------------------------------------
+// | RUTINAS NO DE INTERRUPCIÓN										  |
+// --------------------------------------------------------------------
 
+// Actualizar display 1 (Unidades)
+UPDATE_DISPLAY1:
+	LDI		ZL, LOW(TABLA * 2)
+	LDI		ZH, HIGH(TABLA * 2)
+	
+	; Sumar el contador de segundos 1 a Z
+    MOV		R16, SCOUNTER1
+    ADD		ZL, R16
+    CLR		R1				; Asegurar que no haya residuos en R1
+    ADC		ZH, R1			; Sumar acarreo a ZH
+
+    ; Extraer el valor de la dirección a la que Z está apuntando
+    LPM		OUT_PORTD, Z
+	OUT		PORTD, OUT_PORTD
+
+	; Activar display 1 y desactivar display 2
+	SBI		PORTB, PB2
+	CBI		PORTB, PB3
+
+	RET
+
+// Actualizar display 2 (Unidades)
+UPDATE_DISPLAY2:
+	LDI		ZL, LOW(TABLA * 2)
+	LDI		ZH, HIGH(TABLA * 2)
+	
+	; Sumar el contador de segundos 1 a Z
+    MOV		R16, SCOUNTER2
+    ADD		ZL, R16
+    CLR		R1				; Asegurar que no haya residuos en R1
+    ADC		ZH, R1			; Sumar acarreo a ZH
+
+    ; Extraer el valor de la dirección a la que Z está apuntando
+    LPM		OUT_PORTD, Z
+	OUT		PORTD, OUT_PORTD
+
+	; Activar display 2 y desactivar display 1
+	CBI		PORTB, PB2
+	SBI		PORTB, PB3
+
+	RET
 
 // --------------------------------------------------------------------
 // | RUTINAS DE INTERRUPCIÓN POR CAMBIO EN PINES					  |															  |
@@ -143,85 +193,36 @@ PCINT_ISR:
 // --------------------------------------------------------------------
 // | RUTINAS DE INTERRUPCIÓN CON TIMER0								  |
 // --------------------------------------------------------------------
+// Cuando ocurre un overflow en TIMER0 solo se incrementarán los contadores
 TIMER0_ISR: 
 	PUSH	R16  ; Guardar registro random
 	IN      R16, SREG   ; Guardar el estado de los flags
 	PUSH	R16  ; Guardar registro random
-	RJMP	INCREMENT1
-
-	/*
-	POP		R16
-    OUT		SREG, R16
-	POP		R16  ; Sacar registro random
-	RETI
-	*/
 	
-
-// Incrementar el contador de segundos 1 hasta máximo 10 y reiniciar
-INCREMENT1:
+	// Incrementar contador 1
 	INC		SCOUNTER1
 	CPI		SCOUNTER1, 10
-	BRLO	UPDATE_DISPLAY1
+	BRLO	END_ISR			; Si el contador de unidades no supera 10, no hacer nada más
+
+	// Si SCOUNTER1 >= 10 reiniciar contador e incrementar contador de decenas
 	LDI		SCOUNTER1, 0
-	RJMP	UPDATE_DISPLAY1
+	INC		SCOUNTER2
 
-// Actualizar display 1
-UPDATE_DISPLAY1:
-	LDI		ZL, LOW(TABLA * 2)
-	LDI		ZH, HIGH(TABLA * 2)
+	// Si el contador de decenas supera a 10, reiniciar su valor
+	CPI		SCOUNTER2, 10
+	BRLO	END_ISR			; Si el contador de unidades no supera 10, no hacer nada más
+	LDI		SCOUNTER2, 0
 	
-	; Sumar el contador de segundos 1 a Z
-    MOV		R16, SCOUNTER1
-    ADD		ZL, R16
-    CLR		R1				; Asegurar que no haya residuos en R1
-    ADC		ZH, R1			; Sumar acarreo a ZH
-
-    ; Extraer el valor de la dirección a la que Z está apuntando
-    LPM		OUT_PORTD, Z
-	OUT		PORTD, OUT_PORTD
-
 	POP		R16
     OUT		SREG, R16
 	POP		R16  ; Sacar registro random
 	RETI
 
-/*
-// Incrementar el contador hasta máximo 10 y reiniciar
-INCREMENT:
-	INC		BTN_COUNTER
-	CPI		BTN_COUNTER, 10
-	BRLO	UPDATE_DISPLAY
-	LDI		BTN_COUNTER, 0
-	RJMP	UPDATE_DISPLAY
 
 
-// Incrementar el contador hasta mínimo 0 y reiniciar a 9
-
-DECREMENT:
-	DEC		BTN_COUNTER
-	BRPL	UPDATE_DISPLAY
-	LDI		BTN_COUNTER, 9
-	RJMP	UPDATE_DISPLAY
-
-
-UPDATE_DISPLAY:
-	LDI		ZL, LOW(TABLA * 2)
-	LDI		ZH, HIGH(TABLA * 2)
-	
-	
-	; Multiplicar BTN_COUNTER por 2 y sumarlo a Z
-    MOV		R16, BTN_COUNTER
-    ADD		ZL, R16
-    CLR		R1				; Asegurar que no haya residuos en R1
-    ADC		ZH, R1			; Sumar acarreo a ZH
-
-    ; Extraer el valor de la dirección a la que Z está apuntando
-    LPM		OUT_PORTD, Z
-	OUT		PORTD, OUT_PORTD
-
+END_ISR:
 	POP		R16
     OUT		SREG, R16
 	POP		R16  ; Sacar registro random
 	RETI
-
-*/
+	

@@ -23,11 +23,12 @@
  </OUTPUT_FILES>
  <LABELS>
   <START><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>54</LINE></START>
-  <PCINT_ISR><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>123</LINE></PCINT_ISR>
-  <TIMER0_ISR><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>146</LINE></TIMER0_ISR>
+  <PCINT_ISR><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>173</LINE></PCINT_ISR>
+  <TIMER0_ISR><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>197</LINE></TIMER0_ISR>
   <TABLA><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>47</LINE></TABLA>
-  <MAINLOOP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>115</LINE></MAINLOOP>
-  <INCREMENT1><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>161</LINE></INCREMENT1>
-  <UPDATE_DISPLAY1><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>169</LINE></UPDATE_DISPLAY1>
+  <MAINLOOP><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>119</LINE></MAINLOOP>
+  <UPDATE_DISPLAY1><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>129</LINE></UPDATE_DISPLAY1>
+  <UPDATE_DISPLAY2><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>150</LINE></UPDATE_DISPLAY2>
+  <END_ISR><FILE>C:\Programacion-de-Microcontroladores\Lab3_Interrupciones\Lab3_Interrupciones\Lab3_Interrupciones\main.asm</FILE><LINE>223</LINE></END_ISR>
  </LABELS>
 </ASSEMBLER_INFO>
